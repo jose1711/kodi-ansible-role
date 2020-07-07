@@ -1,0 +1,11 @@
+repositories=(
+{% for kodi_repository in kodi_repositories %}
+              {{ kodi_repository }}
+{% endfor %}
+             )
+
+enabled_repos=(
+{% for kodi_repository in kodi_enabled_repositories %}
+              {{ kodi_repository }}
+{% endfor %}
+              )

@@ -1,0 +1,17 @@
+- name: Add setting node if missing
+  shell:
+    cmd: "xml sel -t -c '/settings/setting[@id=\"item.key\"]' ~{{ kodi_user }}/.kodi/{{ item.file }} || xml ed --inplace -s '/settings' -t elem -n 'setting id=\"{{ item.key }}\" type=\"{{ item.type }}\"' ~{{ kodi_user }}/.kodi/{{ item.file }}"
+  with_items: "{{ kodi_config }}"
+  tags: configure
+
+- name: Configure xml config files
+  command:
+    cmd: "xml ed --inplace -u '/settings/setting[@id=\"{{ item.key }}\"]' -v {{ item.value }} ~{{ kodi_user }}/.kodi/{{ item.file }}"
+  with_items: "{{ kodi_config }}"
+  tags: configure
+
+- name: Drop default attribute
+  command:
+    cmd: "xml ed --inplace -d '/settings/setting[@id=\"{{ item }}\"]/@default' ~{{ kodi_user }}/.kodi/{{ item.file }}"
+  with_items: "{{ kodi_config }}"
+  tags: configure

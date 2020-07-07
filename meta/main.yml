@@ -1,0 +1,27 @@
+galaxy_info:
+  author: jose1711
+  description: Installs and configures Kodi on Arch/Debian/LibreELEC/Ubuntu
+
+  license: MIT
+
+  min_ansible_version: 2.9
+
+  platforms:
+  - name: ArchLinux
+    versions:
+    - all
+  - name: Debian
+    versions:
+    - bullseye
+    - buster
+  - name: Ubuntu
+    versions:
+    - bionic
+    - focal
+  
+
+  galaxy_tags:
+    - htpc
+    - system
+
+dependencies: []

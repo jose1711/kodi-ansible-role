@@ -1,0 +1,7 @@
+packages:
+  - kodi
+  - sqlite3
+  - kodi-eventclients-kodi-send
+  - libxml2-utils
+  - unzip
+  - python-lxml
