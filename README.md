@@ -1,5 +1,5 @@
-Role Name
-=========
+kodi_ansible_role
+=================
 
 Ansible role that installs and configures Kodi on:
  - ArchLinux
@@ -118,7 +118,7 @@ Example Playbook
   hosts: myhtpc
   become: yes
   roles:
-    - { role: jose1711.kodi-ansible-role, kodi_language: en_US }
+    - { role: jose1711.kodi_ansible_role, kodi_language: en_US }
 ```
 
 License

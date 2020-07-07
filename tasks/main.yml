@@ -12,6 +12,7 @@
     executable: "{{ check_kodi_process[ansible_os_family].executable }}"
   register: kodi_running
   become_user: "{{ kodi_user }}"
+  become: True
   ignore_errors: True
   vars:
     check_kodi_process:
@@ -23,15 +24,16 @@
   - configure
 
 - name: Stop Kodi via service
-  command:
-    cmd: "systemctl stop kodi.service"
+  systemd:
+    name: kodi
+    state: stopped
   when: kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'
   tags:
   - configure
 
 - name: Stop Kodi
   fail:
-    msg: "Stop Kodi prior to executing this playbook" 
+    msg: "Stop Kodi prior to executing this playbook"
   when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC'
   tags:
   - configure
@@ -73,12 +75,14 @@
   tags:
   - get_addons
 
-- set_fact:
+- name: Set Kodi version as ansible fact
+  set_fact:
     kodi_version: "{{ kodi_version.stdout }}"
   tags:
   - get_addons
 
-- debug:
+- name: Show Kodi version
+  debug:
     msg: "kodi version: {{ kodi_version }}"
   tags:
   - get_addons
@@ -127,6 +131,7 @@
     cmd: "~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}"
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
+  become: True
   when: "ansible_distribution != 'LibreELEC'"
   tags:
   - get_addons
@@ -155,6 +160,7 @@
     cmd: "~{{ kodi_user }}/.kodi/enable_kodi_addon.sh {{ item }} {{ kodi_version }}"
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
+  become: True
   when: "ansible_distribution == 'LibreELEC'"
   tags:
   - get_addons
@@ -204,9 +210,9 @@
   copy:
     content: "<settings></settings>"
     dest: "~{{ kodi_user }}/.kodi/{{ item }}"
-  with_items: "{{ stat_result.results 
+  with_items: "{{ stat_result.results
                   | selectattr('stat.exists', 'false')
-                  | map(attribute='item') 
+                  | map(attribute='item')
                   | list }}"
   tags: configure
 
@@ -216,13 +222,14 @@
 - include: configure_libreelec.yml
   when: "ansible_distribution == 'LibreELEC'"
 
-- debug:
+- name: Show message to LibreELEC users
+  debug:
     msg: "Update addons Kodi inside Kodi"
   when: "ansible_distribution == 'LibreELEC'"
 
 - name: Apply correct ownership to ~/.kodi
   file:
-    path: "~{{ kodi_user}}/.kodi"
+    path: "~{{ kodi_user }}/.kodi"
     state: directory
     recurse: True
     owner: "{{ kodi_user }}"
@@ -232,8 +239,9 @@
   - get_addons
 
 - name: Start Kodi via service
-  command:
-    cmd: "systemctl start kodi.service"
+  systemd:
+    name: kodi
+    state: started
   when: ansible_distribution == 'LibreELEC'
   tags:
   - configure
