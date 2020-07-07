@@ -11,14 +11,12 @@
     cmd: "{{ check_kodi_process[ansible_os_family].cmd }}"
     executable: "{{ check_kodi_process[ansible_os_family].executable }}"
   register: kodi_running
-  become_user: "{{ kodi_user }}"
-  become: True
   ignore_errors: True
   vars:
     check_kodi_process:
       'Debian': {cmd: "ps ux | grep -wq [k]odi", executable: "/usr/bin/bash"}
       'Ubuntu': {cmd: "ps ux | grep -wq [k]odi", executable: "/usr/bin/bash"}
-      'Archlinux': {cmd: "ps ux | grep -wq [k]odi", executable: "/usr/bin/bash"}
+      'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
       'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
   tags:
   - configure
