@@ -11,6 +11,7 @@
     name: "{{ kodi_user }}"
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
+    append: True
   when: "ansible_distribution != 'LibreELEC'"
   tags:
   - configure
