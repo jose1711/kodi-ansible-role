@@ -1,6 +1,6 @@
 - name: Add setting node if missing
   shell:
-    cmd: "xml sel -t -c '/settings/setting[@id=\"item.key\"]' ~{{ kodi_user }}/.kodi/{{ item.file }} || xml ed --inplace -s '/settings' -t elem -n 'setting id=\"{{ item.key }}\" type=\"{{ item.type }}\"' ~{{ kodi_user }}/.kodi/{{ item.file }}"
+    cmd: "xml sel -t -c '/settings/setting[@id=\"{{ item.key }}\"]' ~{{ kodi_user }}/.kodi/{{ item.file }} || xml ed --inplace -s '/settings' -t elem -n 'setting id=\"{{ item.key }}\" type=\"{{ item.type }}\"' ~{{ kodi_user }}/.kodi/{{ item.file }}"
   with_items: "{{ kodi_config }}"
   tags: configure
 
