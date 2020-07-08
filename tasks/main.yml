@@ -6,6 +6,17 @@
   - install
   - configure
 
+- name: Create Kodi user
+  user:
+    name: "{{ kodi_user }}"
+    shell: "{{ kodi_shell }}"
+    groups: "{{ kodi_groups }}"
+  when: "ansible_distribution != 'LibreELEC'"
+  tags:
+  - configure
+  - get_addons
+  - copy_addon_settings
+
 - name: Check if Kodi is running
   shell:
     cmd: "{{ check_kodi_process[ansible_os_family].cmd }}"
@@ -35,17 +46,6 @@
   when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC'
   tags:
   - configure
-
-- name: Create Kodi user
-  user:
-    name: "{{ kodi_user }}"
-    shell: "{{ kodi_shell }}"
-    groups: "{{ kodi_groups }}"
-  when: "ansible_distribution != 'LibreELEC'"
-  tags:
-  - configure
-  - get_addons
-  - copy_addon_settings
 
 # Setup apt repo (Ubuntu only)"
 - name: Add Kodi ppa
