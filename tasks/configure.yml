@@ -24,3 +24,4 @@
     state: absent
     pretty_print: True
   with_items: "{{ kodi_config }}"
+  tags: configure
