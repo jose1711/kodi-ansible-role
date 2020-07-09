@@ -241,6 +241,36 @@
   - copy_addon_settings
   - get_addons
 
+- name: Slurp favourites from master installation
+  slurp:
+    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/favourites.xml"
+  register: favourites
+  delegate_to: "{{ kodi_master_installation }}"
+  when: kodi_copy_favourites
+  tags: transfer_favourites
+
+- name: Slurp RSS feeds from master installation
+  slurp:
+    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/RssFeeds.xml"
+  register: rssfeeds
+  delegate_to: "{{ kodi_master_installation }}"
+  when: kodi_copy_feeds
+  tags: transfer_feeds
+
+- name: Transfer favourites from master installation
+  copy:
+    content: "{{ favourites['content'] | b64decode }}"
+    dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
+    backup: True
+  tags: transfer_favourites
+
+- name: Transfer RSS feeds from master installation
+  copy:
+    content: "{{ favourites['content'] | b64decode }}"
+    dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
+    backup: True
+  tags: transfer_feeds
+
 - name: Start Kodi via service
   systemd:
     name: kodi

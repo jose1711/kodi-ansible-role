@@ -31,6 +31,12 @@ kodi_locale_timezone_country: Slovakia
 kodi_subtitles_languages: Slovak,Czech
 kodi_weather_provider: weather.shmu.pocasie
 
+# whether to copy favourites.xml and rss from a dedicated host
+kodi_copy_favourites: False
+kodi_copy_feeds: False
+kodi_master_installation: master_install
+kodi_master_kodi_user: kodi_user
+
 kodi_config:
   - {file: 'userdata/guisettings.xml', key: "setting[@id=\"locale.language\"]", value: "resource.language.{{ kodi_language }}", type: "string"}
   - {file: 'userdata/guisettings.xml', key: "setting[@id=\"locale.country\"]", value: "{{ kodi_locale_country }}", type: "string"}
