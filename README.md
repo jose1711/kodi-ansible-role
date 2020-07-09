@@ -104,8 +104,9 @@ There are two options for configuring addon setting:
   1. copy `addon_id/settings.xml` (from `.kodi/userdata/addon_data`) into `files/addon_data`
   2. define selected configuration options and values via `kodi_config` variable (note that type is mandatory)
 
-Option #2 is preferred when you don't want to have your configuration overwritten everytime
-the playbook is executed.
+Option #2 is preferred when you don't want to have your configuration overwritten everytime the playbook is executed.
+
+Please note that Kodi 18 changed the way how settings are stored in `guisettings.xml` (https://github.com/xbmc/xbmc/pull/12277). It is suggested you're using Kodi 18+ as the defaults are using this new settings format (version=2). Since last version of Kodi 17 was in 2017 it's probably a good idea to upgrade anyway.
 
 Dependencies
 ------------
