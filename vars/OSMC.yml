@@ -1,0 +1,4 @@
+packages:
+  - python-lxml
+  - libxml2-utils
+  - sqlite3

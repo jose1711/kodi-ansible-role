@@ -6,6 +6,11 @@
   - install
   - configure
 
+- name: Set kodi_user to osmc (OSMC)
+  set_fact:
+    kodi_user: 'osmc'
+  when: ansible_distribution == 'OSMC'
+
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"
@@ -33,7 +38,7 @@
       'Ubuntu': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
       'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
       'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
-      'OSMC': {cmd: "ps -U osmc -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
+      'OSMC': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
   tags:
   - configure
 
@@ -202,6 +207,7 @@
     owner: "{{ kodi_user }}"
   with_items: "{{ kodi_addons }}"
   ignore_errors: True
+  failed_when: False
   tags:
   - copy_addon_settings
 
