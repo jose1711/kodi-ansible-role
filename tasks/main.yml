@@ -12,7 +12,7 @@
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
     append: True
-  when: "ansible_distribution != 'LibreELEC'"
+  when: ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
   tags:
   - configure
   - get_addons
@@ -33,10 +33,11 @@
       'Ubuntu': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
       'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
       'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
+      'OSMC': {cmd: "ps -U osmc -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
   tags:
   - configure
 
-- name: Stop Kodi via service
+- name: Stop Kodi via service (LibreELEC)
   systemd:
     name: kodi
     state: stopped
@@ -44,10 +45,18 @@
   tags:
   - configure
 
+- name: Stop Kodi via service (OSMC)
+  systemd:
+    name: mediacenter
+    state: stopped
+  when: kodi_running.rc == 0 and ansible_distribution == 'OSMC'
+  tags:
+  - configure
+
 - name: Stop Kodi
   fail:
     msg: "Stop Kodi prior to executing this playbook"
-  when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC'
+  when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
   tags:
   - configure
 
@@ -74,6 +83,7 @@
       'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}' | cut -d'.' -f1"
       'Archlinux': "pacman -Q kodi | awk '{print $2}' | cut -d'.' -f1"
       'LibreELEC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
+      'OSMC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
   tags:
   - get_addons
 
@@ -105,7 +115,7 @@
     dest: "~{{ kodi_user }}/.kodi"
     owner: "{{ kodi_user }}"
     mode: "0700"
-  when: "ansible_distribution != 'LibreELEC'"
+  when: ansible_distribution != 'LibreELEC'
   tags:
   - get_addons
 
@@ -130,11 +140,11 @@
 
 - name: Get Kodi addons
   command:
-    cmd: "~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}"
+    cmd: '~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}'
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
   become: True
-  when: "ansible_distribution != 'LibreELEC'"
+  when: ansible_distribution != 'LibreELEC'
   tags:
   - get_addons
 
@@ -143,7 +153,7 @@
     path: "~{{ kodi_user }}/.kodi/addons/{{ item }}"
     state: directory
   with_items: "{{ kodi_addons }}"
-  when: "ansible_distribution == 'LibreELEC'"
+  when: ansible_distribution == 'LibreELEC'
   tags:
   - get_addons
 
@@ -271,10 +281,18 @@
     backup: True
   tags: transfer_feeds
 
-- name: Start Kodi via service
+- name: Start Kodi via service (LibreELEC)
   systemd:
     name: kodi
     state: started
   when: ansible_distribution == 'LibreELEC'
+  tags:
+  - configure
+
+- name: Start Kodi via service (OSMC)
+  systemd:
+    name: mediacenter
+    state: started
+  when: ansible_distribution == 'OSMC'
   tags:
   - configure

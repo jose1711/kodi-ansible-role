@@ -3,8 +3,9 @@ kodi_ansible_role
 
 Ansible role that installs and configures Kodi on:
  - ArchLinux
- - LibreElec
  - Debian and derivates
+ - LibreElec
+ - OSMC
  - Ubuntu
 
 Intended use is for desktop/HTPC systems with many Kodi addons as one of the features
