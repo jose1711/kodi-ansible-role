@@ -278,6 +278,7 @@
     content: "{{ favourites['content'] | b64decode }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
     backup: True
+  when: kodi_copy_favourites
   tags: transfer_favourites
 
 - name: Transfer RSS feeds from master installation
@@ -285,6 +286,7 @@
     content: "{{ favourites['content'] | b64decode }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
     backup: True
+  when: kodi_copy_feeds
   tags: transfer_feeds
 
 - name: Start Kodi via service (LibreELEC)
