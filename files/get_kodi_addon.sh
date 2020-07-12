@@ -103,8 +103,24 @@ function resolve_addon() {
     fi
     dependencies=$(repo_data ${repo} | xmllint --xpath '//addon[@id="'"${addon_id}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"')
 
-    # output addon download info
-    echo "${version} ${addon_id} $(repo_url ${repo})/${addon_id}/${addon_id}-${version}.zip"
+    datadirs=$(repo_data ${repo} | xmllint --xpath '//datadir/text()' - 2>/dev/null)
+    if [ -z "${datadirs}" ]
+    then
+      # output addon download info
+      echo "${version} ${addon_id} $(repo_url ${repo})/${addon_id}/${addon_id}-${version}.zip"
+    else
+      for datadir in ${datadirs}
+      do
+        curl -Lo "/tmp/tmp_${addon_id}-$version.zip" "${datadir}/${addon_id}/${addon_id}-${version}.zip"
+        unzip -t "/tmp/tmp_${addon_id}-$version.zip" >/dev/null 2>&1
+        if [ $? -eq 0 ]
+        then
+          echo "${version} ${addon_id} ${datadir}/${addon_id}/${addon_id}-${version}.zip"
+        fi
+        rm "/tmp/tmp_${addon_id}-$version.zip"
+      done
+    fi
+
     # search requisite addons in all repositories
     for dependency in ${dependencies}
     do
@@ -128,9 +144,10 @@ do
     echo "Skipping download of ${addon_id} - already installed" >&2
   else
     echo "Downloading ${addon_id} from ${url}.." >&2
-    curl -o "/tmp/${addon_id}.zip" "${url}"
+    curl -Lo "/tmp/${addon_id}.zip" "${url}"
     cd ~/.kodi/addons
     unzip "/tmp/${addon_id}.zip"
+    rm "/tmp/${addon_id}.zip"
   fi
   cd $(dirname $0)
   ./enable_kodi_addon.sh "${addon_id}" "${kodi_version}"
