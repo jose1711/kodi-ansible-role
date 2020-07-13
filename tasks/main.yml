@@ -41,6 +41,7 @@
       'OSMC': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
   tags:
   - configure
+  check_mode: no
 
 - name: Stop Kodi via service (LibreELEC)
   systemd:
@@ -89,6 +90,7 @@
       'Archlinux': "pacman -Q kodi | awk '{print $2}' | cut -d'.' -f1"
       'LibreELEC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
       'OSMC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
+  check_mode: no
   tags:
   - get_addons
 
