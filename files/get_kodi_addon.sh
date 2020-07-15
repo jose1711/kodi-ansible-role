@@ -103,7 +103,8 @@ function resolve_addon() {
     fi
     dependencies=$(repo_data ${repo} | xmllint --xpath '//addon[@id="'"${addon_id}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"')
 
-    datadirs=$(repo_data ${repo} | xmllint --xpath '//datadir/text()' - 2>/dev/null)
+    # found no way how to separate text nodes than.. well.. this
+    datadirs=$(repo_data ${repo} | xmllint --xpath '//datadir' - | sed 's/<[^>]*>/ /g' - 2>/dev/null)
     if [ -z "${datadirs}" ]
     then
       # output addon download info
