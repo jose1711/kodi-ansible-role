@@ -34,7 +34,7 @@
   ignore_errors: True
   vars:
     check_kodi_process:
-      'Debian': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
+      'Debian': {cmd: "ps -U {{ kodi_user }} -o command | grep -e '^/usr/lib/.*kodi.bin' -e '^/usr/lib/.*kodi-rbpi'", executable: "/bin/bash"}
       'Ubuntu': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
       'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
       'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
