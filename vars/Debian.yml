@@ -5,3 +5,4 @@ packages:
   - libxml2-utils
   - unzip
   - python-lxml
+  - acl
