@@ -232,7 +232,7 @@
     content: "<settings></settings>"
     dest: "~{{ kodi_user }}/.kodi/{{ item }}"
   with_items: "{{ stat_result.results
-                  | selectattr('stat.exists', 'false')
+                  | selectattr('stat.exists', 'equalto', false)
                   | map(attribute='item')
                   | list }}"
   tags: configure
