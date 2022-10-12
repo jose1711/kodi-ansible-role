@@ -20,7 +20,9 @@ case "${kodi_version}" in
       ;;
   18) db=~/.kodi/userdata/Database/Addons27.db
       ;;
-  19) db=~/.kodi/userdata/Database/Addons27.db
+  19) db=~/.kodi/userdata/Database/Addons33.db
+      ;;
+  20) db=~/.kodi/userdata/Database/Addons33.db
       ;;
 esac
 
