@@ -113,7 +113,8 @@ function resolve_addon() {
       for datadir in ${datadirs}
       do
         curl -Lo "/tmp/tmp_${addon_id}-$version.zip" "${datadir}/${addon_id}/${addon_id}-${version}.zip"
-        unzip -t "/tmp/tmp_${addon_id}-$version.zip" >/dev/null 2>&1
+        # unzip -t "/tmp/tmp_${addon_id}-$version.zip" >/dev/null 2>&1
+				file "/tmp/tmp_${addon_id}-$version.zip" | grep -q 'Zip archive'
         if [ $? -eq 0 ]
         then
           echo "${version} ${addon_id} ${datadir}/${addon_id}/${addon_id}-${version}.zip"
@@ -150,6 +151,6 @@ do
     unzip "/tmp/${addon_id}.zip"
     rm "/tmp/${addon_id}.zip"
   fi
-  cd $(dirname $0)
+	cd ~/.kodi
   ./enable_kodi_addon.sh "${addon_id}" "${kodi_version}"
 done

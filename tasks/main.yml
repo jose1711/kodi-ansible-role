@@ -174,13 +174,13 @@
   tags:
   - get_addons
 
-- name: Enable Kodi addons (LibreELEC)
+- name: Enable Kodi addons (LibreELEC/OSMC)
   command:
     cmd: "~{{ kodi_user }}/.kodi/enable_kodi_addon.sh {{ item }} {{ kodi_version }}"
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
   become: True
-  when: "ansible_distribution == 'LibreELEC'"
+  when: "ansible_distribution == 'LibreELEC' or ansible_distribution == 'OSMC'"
   tags:
   - get_addons
 
@@ -232,7 +232,7 @@
     content: "<settings></settings>"
     dest: "~{{ kodi_user }}/.kodi/{{ item }}"
   with_items: "{{ stat_result.results
-                  | selectattr('stat.exists', 'equalto', false)
+                  | selectattr('stat.exists', 'false')
                   | map(attribute='item')
                   | list }}"
   tags: configure
