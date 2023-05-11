@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # find, download and enable Kodi addon if not already present,
 # also requisites are pulled
 #
@@ -7,150 +7,161 @@
 # $1 = addon_id
 # $2 = major kodi version
 
-addon_id=$1
-kodi_version=$2
+set -euo pipefail
 
-if [ -z "${addon_id}" -o -z "${kodi_version}" ]
+usage() {
+  printf 1>&2 -- 'Usage: %s <addon-id> <kodi-version>\n' "${0##*/}"
+}
+
+if (( "$#" != 2 ))
 then
-  echo "Both addon_id and kodi_version must be provided as arguments"
+  usage
   exit 1
 fi
 
-case "${kodi_version}" in
-  16) codename=jarvis
-      ;;
-  17) codename=krypton
-      ;;
-  18) codename=leia
-      ;;
-  19) codename=matrix
-      ;;
-esac
+addon_id="$1"
+shift
 
-cd $(dirname $0)
-source repositories.sh
+kodi_version="$1"
+shift
 
+cd "$(dirname "$0")" || exit
 
-function cache_repositories() {
-  for repo_data in ${repositories[@]}
+source repositories.sh || exit
+
+cache_repositories() {
+  for repo_data in "${repositories[@]?}"
   do
-    name=${repo_data%=*}
-    url=${repo_data#*=}
-    echo "$url" | grep -q "\.gz"
-    if [ $? -eq 0 ]
-    then
-      filter='gunzip -c -'
-    else
-      filter='cat'
-    fi
+    name="${repo_data%=*}"
+    url="${repo_data#*=}"
+
     # only download if the file is missing
-    if [ ! -f "/tmp/${name}.xml" ]
+    if ! [[ -f "/tmp/${name}.xml" ]]; then
+      printf 1>&2 -- 'Already cached name: %s, url: %s\n' "$name" "$url"
+      continue
+    fi
+
+    local -a filter=(cat)
+
+    case "$url" in
+      *.gz) filter=(gunzip -c -)
+        ;;
+    esac
+
+    # only download if the file is missing
+    if ! [[ -f "/tmp/${name}.xml" ]]
     then
-      echo "Caching name: ${name}, url: ${url}" >&2
-      curl -s "${url}" | ${filter} >/tmp/${name}.xml
+      printf 1>&2 -- 'Caching name: %s, url: %s\n' "$name" "$url"
+      curl -s "$url" | "${filter[@]}" > "/tmp/${name}.xml"
     fi
   done
 }
 
-function repo_data() {
-  repo=$1
-  cat /tmp/${repo}.xml
+repo_data() {
+  cat "/tmp/${1?}.xml"
 }
 
-function repo_url() {
-  repo=$1
-  for repo_data in ${repositories[@]}
+repo_url() {
+  for repo_data in "${repositories[@]?}"
   do
     name=${repo_data%=*}
     url=${repo_data#*=}
-    if [ "${name}" = "${repo}" ]
+    if [[ "$name" = "${1?}" ]]
     then
-      dirname ${url}
+      dirname "$url"
       return
     fi
   done
 }
 
-cache_repositories
+resolve_addon() {
+  local addon_id="$1"
+  shift
 
-
-function resolve_addon() {
-  local addon_id=$1
   local version
+
   # no need to resolve this core dependency
-  if [ "${addon_id}" = "xbmc.python" ]
+  if [[ "${addon_id}" = xbmc.python ]]
   then
     return
   fi
 
-  echo "Resolving ${addon_id}.." >&2
+  printf 1>&2 -- 'Resolving %s...\n' "$addon_id"
 
-  if [ -d ~/.kodi/addons/${addon_id} ]
+  if [[ -d ~/.kodi/addons/"$addon_id" ]]
   then
-    echo "Skipping - already installed" >&2
+    printf 1>&2 -- 'Skipping - %s already installed\n' "$addon_id"
     return
   fi
 
   # search addon_id in all enabled repositories
-  for repo in ${enabled_repos[@]}
+  for repo in "${enabled_repos[@]?}"
   do
-    echo "Checking in ${repo}.." >&2
-    version=$(repo_data ${repo} | xmllint --xpath 'string(//addon[@id="'"${addon_id}"'"]/@version)' -)
-    if [ -z "${version}" ]
+    printf 1>&2 -- 'Checking in %s...\n' "$repo"
+
+    if ! version="$(repo_data "$repo" | xmllint --xpath 'string(//addon[@id="'"$addon_id"'"]/@version)' -)" || [[ -z "$version" ]]
     then
-      echo "Not found in ${repo} repository" >&2
+      printf 1>&2 -- 'Not found in %s repository\n' "$repo"
       continue
     fi
-    dependencies=$(repo_data ${repo} | xmllint --xpath '//addon[@id="'"${addon_id}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"')
+
+    local datadir_count=0
+
+    while read -r datadir
+    do
+      (( datadir_count++ ))
+
+      # unzip -t "/tmp/tmp_${addon_id}-$version.zip" >/dev/null 2>&1
+      if {
+            curl -Lo "/tmp/tmp_${addon_id}-$version.zip" "${datadir}/${addon_id}/${addon_id}-${version}.zip" \
+        &&  file "/tmp/tmp_${addon_id}-$version.zip" | grep -q 'Zip archive'
+      }
+      then
+        echo "${version} ${addon_id} ${datadir}/${addon_id}/${addon_id}-${version}.zip"
+      fi
+
+      rm -f "/tmp/tmp_${addon_id}-$version.zip"
 
     # found no way how to separate text nodes than.. well.. this
-    datadirs=$(repo_data ${repo} | xmllint --xpath '//datadir' - | sed 's/<[^>]*>/ /g' - 2>/dev/null)
-    if [ -z "${datadirs}" ]
+    done < <(repo_data "$repo" | xmllint --xpath '//datadir' - | sed 's/<[^>]*>/ /g' - 2>/dev/null)
+
+    if (( datadir_count == 0 ))
     then
       # output addon download info
-      echo "${version} ${addon_id} $(repo_url ${repo})/${addon_id}/${addon_id}-${version}.zip"
-    else
-      for datadir in ${datadirs}
-      do
-        curl -Lo "/tmp/tmp_${addon_id}-$version.zip" "${datadir}/${addon_id}/${addon_id}-${version}.zip"
-        # unzip -t "/tmp/tmp_${addon_id}-$version.zip" >/dev/null 2>&1
-				file "/tmp/tmp_${addon_id}-$version.zip" | grep -q 'Zip archive'
-        if [ $? -eq 0 ]
-        then
-          echo "${version} ${addon_id} ${datadir}/${addon_id}/${addon_id}-${version}.zip"
-        fi
-        rm "/tmp/tmp_${addon_id}-$version.zip"
-      done
+      echo "${version} ${addon_id} $(repo_url "$repo")/${addon_id}/${addon_id}-${version}.zip"
     fi
 
     # search requisite addons in all repositories
-    for dependency in ${dependencies}
+    while read -r dependency
     do
-      resolve_addon ${dependency}
-    done
+      resolve_addon "$dependency" || return
+    done < <(repo_data "$repo" | xmllint --xpath '//addon[@id="'"$addon_id"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"')
   done
 }
 
-latest_addon_urls=$(resolve_addon "${addon_id}" | sort -nrk 2,1 | awk '!a[$2]++{print $2,$3}')
+cache_repositories
 
-if [ -z "${latest_addon_urls}" ]
-then
-  echo "No such addon (${addon_id}) found (or already installed)"
-  exit
-fi
+found_addons=0
 
-echo "${latest_addon_urls}" | while read -r addon_id url
+while read -r addon_id url
 do
-  if [ -d ~/.kodi/addons/${addon_id} ]
+  (( found_addons++ ))
+
+  if [[ -d ~/.kodi/addons/"$addon_id" ]]
   then
-    echo "Skipping download of ${addon_id} - already installed" >&2
+    printf 1>&2 -- 'Skipping download of %s - already installed\n' "$addon_id"
   else
-    echo "Downloading ${addon_id} from ${url}.." >&2
-    curl -Lo "/tmp/${addon_id}.zip" "${url}"
-    cd ~/.kodi/addons
-    unzip "/tmp/${addon_id}.zip"
-    rm "/tmp/${addon_id}.zip"
+    printf 1>&2 -- 'Downloading %s from %s...\n' "$addon_id" "$url"
+
+    curl -L "$url" | unzip -d ~/.kodi/addons -c
   fi
-	cd ~/.kodi
-  ./enable_kodi_addon.sh "${addon_id}" "${kodi_version}"
-done
+
+  cd ~/.kodi
+
+  ./enable_kodi_addon.sh "$addon_id" "$kodi_version"
+done < <(resolve_addon "$addon_id" | sort -nrk 2,1 | awk '!a[$2]++{print $2,$3}')
+
+if (( found_addons == 0 ))
+then
+  printf 1>&2 -- 'No such addon (%s) found (or already installed)\n' "$addon_id"
+fi

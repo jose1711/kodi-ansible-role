@@ -1,34 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # enable Kodi addon
 #
 # $1 = addon_id
 # $2 = major kodi version
 
-addon_id=$1
-kodi_version=$2
+set -euo pipefail
 
-if [ -z "${addon_id}" -o -z "${kodi_version}" ]
+usage() {
+  printf 1>&2 -- 'Usage: %s <addon-id> <kodi-version>\n' "${0##*/}"
+}
+
+if (( "$#" != 2 ))
 then
-  echo "Both addon_id and kodi_version must be provided as arguments"
+  usage
   exit 1
 fi
 
-case "${kodi_version}" in
-  16) db=~/.kodi/userdata/Database/Addons20.db
-      ;;
-  17) db=~/.kodi/userdata/Database/Addons27.db
-      ;;
-  18) db=~/.kodi/userdata/Database/Addons27.db
-      ;;
-  19) db=~/.kodi/userdata/Database/Addons27.db
-      ;;
-esac
+addon_id="$1"
+shift
+
+kodi_version="$1"
+shift
+
+if [[ -z "$addon_id" ]] || [[ -z "$kodi_version" ]]
+then
+  printf 1>&2 -- 'Error: addon ID and Kodi version cannot be empty.\n'
+  usage
+  exit 1
+fi
+
+for db in ~/.kodi/userdata/Database/Addons*.db
+do
+  if [[ -f "$db" ]]
+  then
+    break
+  else
+    unset db
+  fi
+done
+
+if [[ -z "${db:-}" ]]
+then
+  case "$kodi_version" in
+    16) db=~/.kodi/userdata/Database/Addons20.db
+        ;;
+    17|18|19) db=~/.kodi/userdata/Database/Addons27.db
+        ;;
+    20) db=~/.kodi/userdata/Database/Addons33.db
+        ;;
+    *)
+      printf 1>&2 -- '%s: unsupported Kodi version: %s\n' "${0##*/}" "$kodi_version"
+      exit
+        ;;
+  esac
+fi
 
 # init empty db
-if [ ! -f "${db}" ]
+if ! [[ ! -f "$db" ]]
 then
-  mkdir -p ~/.kodi/userdata/Database
-  sqlite3 "${db}" <<"HERE"
+  mkdir -p "${db%/*}"
+  sqlite3 "$db" <<"HERE"
 CREATE TABLE version (idVersion integer, iCompressCount integer);
 CREATE TABLE repo (id integer primary key, addonID text,checksum text, lastcheck text, version text);
 CREATE TABLE addonlinkrepo (idRepo integer, idAddon integer);
@@ -50,18 +81,11 @@ INSERT INTO version (idVersion, iCompressCount) VALUES (27, 0);
 HERE
 fi
 
-if [ -z "${db}" ]
+if ! sqlite3 "$db" 'SELECT * from installed where addonID="'"$addon_id"'"' | grep -Fq "$addon_id"
 then
-  echo "No db found, skipped" >&2
-  exit
-fi
-
-sqlite3 "${db}" 'SELECT * from installed where addonID="'"${addon_id}"'"' | grep -q "${addon_id}"
-if [ $? -ne 0 ]
-then
-  echo "Adding ${addon_id} to list of installed addons and enabling it.."
-  sqlite3 "${db}" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"${addon_id}"'", 1, "1970-01-01 00:00:01");'
+  printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$addon_id"
+  sqlite3 "$db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$addon_id"'", 1, "1970-01-01 00:00:01");'
 else
-  echo "Making sure ${addon_id} is enabled.."
-  sqlite3 "${db}" 'UPDATE installed SET enabled=1 WHERE addonId="'"${addon_id}"'"'
+  printf 1>&2 -- 'Making sure %s is enabled...\n' "$addon_id"
+  sqlite3 "$db" 'UPDATE installed SET enabled=1 WHERE addonId="'"$addon_id"'"'
 fi
