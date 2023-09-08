@@ -173,11 +173,11 @@ resolve_addon() {
   # search addon_id in all enabled repositories
   for repo in ${ENABLED_REPOSITORIES?}
   do
-    printf 1>&2 -- 'Checking in %s...\n' "$repo"
+    printf 1>&2 -- 'Checking for addon %s in %s...\n' "$addon_id" "$repo"
 
     if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]
     then
-      printf 1>&2 -- 'Not found in %s repository\n' "$repo"
+      printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$addon_id" "$repo"
       continue
     fi
 
