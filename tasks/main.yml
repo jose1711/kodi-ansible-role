@@ -143,6 +143,7 @@
     owner: "{{ kodi_user }}"
   when: "ansible_distribution == 'LibreELEC'"
   with_items: "{{ kodi_addons | select('match', '^repository.') | list }}"
+  ignore_errors: yes
   tags:
   - get_addons
 
