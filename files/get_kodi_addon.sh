@@ -279,7 +279,7 @@ enable_addon() {
 
   if [ -z "${db:-}" ]
   then
-    case "$kodi_version" in
+    case "${kodi_version%%.*}" in
       16) db=~/.kodi/userdata/Database/Addons20.db
           ;;
       17|18|19) db=~/.kodi/userdata/Database/Addons27.db

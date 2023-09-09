@@ -86,11 +86,11 @@
   register: kodi_version
   vars:
     kodi_query_version:
-      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}' | cut -d'.' -f1"
-      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}' | cut -d'.' -f1"
-      'Archlinux': "pacman -Q kodi | awk '{print $2}' | cut -d'.' -f1"
-      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
-      'OSMC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
+      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
+      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
+      'Archlinux': "pacman -Q kodi | awk '{print $2}'"
+      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
+      'OSMC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
   check_mode: no
   tags:
   - get_addons
