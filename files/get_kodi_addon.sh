@@ -25,6 +25,12 @@ shift
 kodi_version="$1"
 shift
 
+_curl() {
+  # Identify ourselves as Kodi.  Stuff may break if we do not.  See, e.g.,
+  # https://github.com/jellyfin/jellyfin-kodi/issues/736.
+  curl --user-agent "Kodi${kodi_version:+/${kodi_version}}" "$@"
+}
+
 if command -v xmllint 1>/dev/null 2>&1
 then
   addon_versions() {
@@ -97,7 +103,7 @@ cache_repositories() {
 
     fetch_path="${data_path}.out"
 
-    curl -fsLS -o "$fetch_path" "$url" || {
+    _curl -fsLS -o "$fetch_path" "$url" || {
       rc="$?"
       rm -f "$fetch_path"
       continue
@@ -136,7 +142,7 @@ path_for_zip_url() {
 }
 
 fetch_zip() {
-  if ! curl -Lo "${2?}" "${1?}"
+  if ! _curl -Lo "${2?}" "${1?}"
   then
     printf 1>&2 -- 'Unable to fetch "%s" from "%s"\n' "$2" "$1"
     return 1
