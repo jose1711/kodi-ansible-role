@@ -346,14 +346,7 @@ do
     continue
   fi
 
-  if [ -d ~/.kodi/addons/"$addon_id" ]
-  then
-    printf 1>&2 -- 'Skipping download of %s - already installed\n' "$addon_id"
-  else
-    #printf 1>&2 -- 'Downloading %s from %s...\n' "$addon_id" "$url"
-
-    unzip -q -d ~/.kodi/addons "$path"
-  fi
+  unzip -q -d ~/.kodi/addons "$path"
 
   enable_addon "$addon_id" "$kodi_version"
 done <<RESOLVE_ADDON
