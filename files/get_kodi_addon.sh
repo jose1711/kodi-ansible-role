@@ -362,5 +362,6 @@ RESOLVE_ADDON
 if [ "$found_addons" -eq 0 ]
 then
   printf 1>&2 -- 'No such addon (%s) found (or already installed)\n' "$target_addon_id"
-  exit 1
+  enable_addon "$target_addon_id" "$kodi_version" || exit
+  printf 1>&2 -- 'Looks like addon %s is a core addon\n' "$target_addon_id"
 fi
