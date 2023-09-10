@@ -143,25 +143,31 @@
   - configure
   - get_addons
 
+- name: Get addons for upload
+  set_fact:
+    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
+  with_items: "{{ kodi_addons | select('match', '^repository.') | list }}"
+
 - name: Copy Kodi repository addons
   copy:
-    src: "addons/{{ item }}"
+    src: "{{ item }}"
     dest: "~{{ kodi_user }}/.kodi/addons"
     owner: "{{ kodi_user }}"
-  when: "ansible_distribution == 'LibreELEC'"
-  with_items: "{{ kodi_addons | select('match', '^repository.') | list }}"
-  ignore_errors: yes
   tags:
   - get_addons
+  with_items: "{{ kodi_addons_upload }}"
+
+- name: Get addon settings for upload
+  set_fact:
+    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
+  with_items: "{{ kodi_addons }}"
 
 - name: Copy addon settings
   copy:
-    src: "addon_data/{{ item }}"
+    src: "{{ item }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
     owner: "{{ kodi_user }}"
-  with_items: "{{ kodi_addons }}"
-  ignore_errors: True
-  failed_when: False
+  with_items: "{{ kodi_addon_settings_upload }}"
   tags:
   - copy_addon_settings
 
