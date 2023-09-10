@@ -5,7 +5,7 @@ kodi_groups: [audio, video, input]
 kodi_shell: /bin/bash
 
 kodi_repositories: []
-kodi_enabled_repositories: []
+kodi_enabled_repositories: "{{ kodi_repositories | map('split', '=') | map(attribute=0) | list }}"
 
 kodi_addons: []
 
