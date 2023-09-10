@@ -126,7 +126,7 @@
 - name: Get Kodi addons
   script:
     cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
-  with_items: "{{ kodi_addons }}"
+  with_items: "{{ kodi_addon_names }}"
   become_user: "{{ kodi_user }}"
   become: True
   environment:
@@ -146,7 +146,7 @@
 - name: Get addons for upload
   set_fact:
     kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
-  with_items: "{{ kodi_addons | select('match', '^repository.') | list }}"
+  with_items: "{{ kodi_addon_names | select('match', '^repository.') | list }}"
 
 - name: Copy Kodi repository addons
   copy:
@@ -160,7 +160,7 @@
 - name: Get addon settings for upload
   set_fact:
     kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
-  with_items: "{{ kodi_addons }}"
+  with_items: "{{ kodi_addon_names }}"
 
 - name: Copy addon settings
   copy:

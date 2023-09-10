@@ -27,3 +27,7 @@ kodi_config_cond:
 kodi_config_cond_resolved: "{{ kodi_config_cond | selectattr('cond') | map(attribute='config') | list }}"
 
 kodi_config_final: "{{ kodi_config_cond_resolved + (kodi_config | default([])) }}"
+
+kodi_repository_names: "{{ kodi_repositories | map('split', '=') | map(attribute=0) | list }}"
+
+kodi_addon_names: "{{ kodi_addons | map('split', '=') | map(attribute=0) | list }}"
