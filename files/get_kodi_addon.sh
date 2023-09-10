@@ -160,6 +160,13 @@ resolve_addon() {
   addon_id="$1"
   shift
 
+  case "$addon_id" in
+    *=*)
+      url="${addon_id#*=}"
+      addon_id="${addon_id%%=*}"
+      ;;
+  esac
+
   # no need to resolve this core dependency
   if [ "${addon_id}" = xbmc.python ]
   then
@@ -174,6 +181,25 @@ resolve_addon() {
     printf 1>&2 -- 'Skipping - %s already installed\n' "$addon_id"
     echo 0 - -
     return
+  fi
+
+  if [ -n "${url:-}" ]
+  then
+    case "$addon_id" in
+      repository.*)
+        path="$(path_for_zip_url "$url")"
+        # output addon download info
+        if fetch_zip "$url" "$path"; then
+          echo "0 ${addon_id} ${path}"
+        fi
+        return
+        ;;
+      *)
+        printf 1>&2 -- 'Sorry, oneshot downloads are not supported for addons of type "%s" (%s)...\n' \
+          "${addon_id%%.*}" "$addon_id"
+        return 1
+        ;;
+    esac
   fi
 
   # search addon_id in all enabled repositories
