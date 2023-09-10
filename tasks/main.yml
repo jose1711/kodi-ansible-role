@@ -1,4 +1,11 @@
 ---
+- name: Include default configuration
+  include_vars: "default.yml"
+  when: 'kodi_include_default_config | default(False) | bool'
+  tags:
+  - install
+  - configure
+
 # tasks file for kodi-ansible-role
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
@@ -162,13 +169,13 @@
   file:
     path: "~{{ kodi_user }}/.kodi/{{ item }}"
     state: directory
-  with_items: "{{ kodi_config | map(attribute='file') | map('dirname') | unique }}"
+  with_items: "{{ kodi_config_final | map(attribute='file') | map('dirname') | unique }}"
   tags: configure
 
 - name: Check if xml config files exist
   stat:
     path: "~{{ kodi_user }}/.kodi/{{ item }}"
-  with_items: "{{ kodi_config | map(attribute='file') | unique }}"
+  with_items: "{{ kodi_config_final | map(attribute='file') | unique }}"
   tags: configure
   register: stat_result
 

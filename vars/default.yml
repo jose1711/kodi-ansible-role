@@ -1,0 +1,53 @@
+kodi_setting_level: 3
+kodi_webserver_enabled: True
+kodi_webserver_port: 8080
+kodi_webserver_user: kodi
+kodi_webserver_password: strongpassword
+
+kodi_addons:
+  - plugin.video.joj.sk
+  - plugin.video.ta3.com
+  - plugin.video.tvba.sk
+  - resource.language.sk_sk
+  - service.xbmc.callbacks
+
+kodi_repositories:
+  - official_cached=https://ftp.fau.de/xbmc/addons/${codename}/addons.xml.gz
+  - kodiczsk_cached=https://mirror.xbmc-kodi.cz/addons/addons.xml.gz
+  - czsk_cached=http://kodi-czsk.github.io/repository/repo/addons.xml
+
+kodi_enabled_repositories:
+  - official_cached
+  - kodiczsk_cached
+  - czsk_cached
+
+kodi_language: sk_sk
+kodi_locale_country: Slovensko
+kodi_locale_timezone_country: Slovakia
+kodi_subtitles_languages: Slovak,Czech
+kodi_weather_provider: weather.shmu.pocasie
+
+kodi_config:
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoTVButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoRadioButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoFavButton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoWeatherButton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoMusicButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoVideosButton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoTVShowButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoProgramsButton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoPicturesButton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoMovieButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoMusicVideoButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunogamesbutton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"HomeMenuNoTVButton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunoradiobutton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunofavbutton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunoweatherbutton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunomusicbutton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunovideosbutton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunotvshowbutton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunoprogramsbutton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunopicturesbutton\"]", value: "false", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunomoviebutton\"]", value: "true", type: "bool"}
+  - {file: 'userdata/addon_data/skin.estuary/settings.xml', key: "settings/setting[@id=\"homemenunomusicvideobutton\"]", value: "true", type: "bool"}
