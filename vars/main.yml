@@ -14,11 +14,11 @@ kodi_config_cond:
   - cond: "{{ kodi_weather_provider is defined }}"
     config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"weather.addon\"]", value: "{{ kodi_weather_provider | default('') }}", type: "string"}
   - cond: "{{ kodi_unknown_addon_sources_enabled is defined }}"
-    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"addons.unknownsources\"]", value: "{{ kodi_unknown_addon_sources_enabled | default('') }}", type: "bool"}
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"addons.unknownsources\"]", value: "{{ kodi_unknown_addon_sources_enabled | default(False) | bool | ternary('true', 'false') }}", type: "bool"}
   - cond: "{{ kodi_webserver_enabled is defined }}"
-    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserver\"]", value: "{{ kodi_webserver_enabled | default('') }}", type: "bool"}
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserver\"]", value: "{{ kodi_webserver_enabled | default(False) | bool | ternary('true', 'false') }}", type: "bool"}
   - cond: "{{ kodi_webserver_port is defined }}"
-    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverport\"]", value: "{{ kodi_webserver_port | default('') }}", type: "string"}
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverport\"]", value: "{{ kodi_webserver_port | default(8080) | int }}", type: "string"}
   - cond: "{{ kodi_webserver_user is defined }}"
     config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverusername\"]", value: "{{ kodi_webserver_user | default('') }}", type: "string"}
   - cond: "{{ kodi_webserver_password is defined }}"
