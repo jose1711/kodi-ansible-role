@@ -8,8 +8,8 @@
 
 - name: Set kodi_user to osmc (OSMC)
   set_fact:
-    kodi_user: 'osmc'
-  when: ansible_distribution == 'OSMC'
+    kodi_user: "osmc"
+  when: "ansible_distribution == 'OSMC'"
 
 - name: Create Kodi user
   user:
@@ -17,7 +17,7 @@
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
     append: True
-  when: ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
+  when: "ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
   tags:
   - configure
   - get_addons
@@ -47,7 +47,7 @@
   systemd:
     name: kodi
     state: stopped
-  when: kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'
+  when: "kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'"
   tags:
   - configure
 
@@ -55,20 +55,21 @@
   systemd:
     name: mediacenter
     state: stopped
-  when: kodi_running.rc == 0 and ansible_distribution == 'OSMC'
+  when: "kodi_running.rc == 0 and ansible_distribution == 'OSMC'"
   tags:
   - configure
 
 - name: Stop Kodi
   fail:
     msg: "Stop Kodi prior to executing this playbook"
-  when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
+  when: "kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
   tags:
   - configure
 
 # Setup apt repo (Ubuntu only)"
 - name: Add Kodi ppa
-  apt_repository: repo='ppa:team-xbmc/ppa'
+  apt_repository:
+    repo: "ppa:team-xbmc/ppa"
   when: "ansible_distribution == 'Ubuntu'"
   tags:
   - install
@@ -295,7 +296,7 @@
   systemd:
     name: kodi
     state: started
-  when: ansible_distribution == 'LibreELEC'
+  when: "ansible_distribution == 'LibreELEC'"
   tags:
   - configure
 
@@ -303,6 +304,6 @@
   systemd:
     name: mediacenter
     state: started
-  when: ansible_distribution == 'OSMC'
+  when: "ansible_distribution == 'OSMC'"
   tags:
   - configure

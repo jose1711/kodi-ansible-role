@@ -8,6 +8,5 @@
 
 - name: Update XML
   command:
-    cmd: '~{{ kodi_user }}/.kodi/update_xml.py ''{{ item.file }}'' ''{{ item.key }}'' ''{{ item.value }}'' ''{{ item.type }}'' '
+    cmd: "~{{ kodi_user }}/.kodi/update_xml.py {{ item.file | quote }} {{ item.key | quote }} {{ item.value | quote }} {{ item.type | quote }}"
   with_items: "{{ kodi_config }}"
-  tags: configure
