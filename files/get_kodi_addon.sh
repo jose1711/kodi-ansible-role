@@ -13,8 +13,7 @@ usage() {
   printf 1>&2 -- 'Usage: %s <addon-id> <kodi-version>\n' "${0##*/}"
 }
 
-if [ "$#" -ne 2 ]
-then
+if [ "$#" -ne 2 ]; then
   usage
   exit 1
 fi
@@ -31,8 +30,7 @@ _curl() {
   curl --user-agent "Kodi${kodi_version:+/${kodi_version}}" "$@"
 }
 
-if command -v xmllint 1>/dev/null 2>&1
-then
+if command -v xmllint 1>/dev/null 2>&1; then
   addon_versions() {
     xmllint --xpath 'string(//addon[@id="'"${1?}"'"]/@version)' -
   }
@@ -44,8 +42,7 @@ then
   addon_imports() {
     xmllint --xpath '//addon[@id="'"${1?}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"'
   }
-elif command -v python 1>/dev/null 2>&1
-then
+elif command -v python 1>/dev/null 2>&1; then
   python_xpath() {
     python -c '
 import os
@@ -85,16 +82,14 @@ addon_version() {
 }
 
 cache_repositories() {
-  for repo_data in ${REPOSITORIES?}
-  do
+  for repo_data in ${REPOSITORIES?}; do
     name="${repo_data%=*}"
     url="${repo_data#*=}"
 
     data_path="${TMPDIR:-/tmp}/${name}.xml"
 
     # only download if the file is missing
-    if [ -f "$data_path" ]
-    then
+    if [ -f "$data_path" ]; then
       printf 1>&2 -- 'Already cached name: %s, url: %s\n' "$name" "$url"
       continue
     fi
@@ -110,7 +105,7 @@ cache_repositories() {
     }
 
     {
-      gunzip -c "$fetch_path" > "$data_path" || mv -f "$fetch_path" "$data_path"
+      gunzip -c "$fetch_path" >"$data_path"  || mv -f "$fetch_path" "$data_path"
     } || {
       rc="$?"
       rm -f "$fetch_path" "$data_path"
@@ -125,12 +120,10 @@ repo_data() {
 }
 
 repo_url() {
-  for repo_data in ${REPOSITORIES?}
-  do
+  for repo_data in ${REPOSITORIES?}; do
     name=${repo_data%=*}
     url=${repo_data#*=}
-    if [ "$name" = "${1?}" ]
-    then
+    if [ "$name" = "${1?}" ]; then
       dirname "$url"
       return
     fi
@@ -142,14 +135,12 @@ path_for_zip_url() {
 }
 
 fetch_zip() {
-  if ! _curl -Lo "${2?}" "${1?}"
-  then
+  if ! _curl -Lo "${2?}" "${1?}"; then
     printf 1>&2 -- 'Unable to fetch "%s" from "%s"\n' "$2" "$1"
     return 1
   fi
 
-  if ! unzip -lq "$2" >/dev/null 2>&1
-  then
+  if ! unzip -lq "$2" >/dev/null 2>&1; then
     printf 1>&2 -- '"%s" from "%s" does not look like a zip archive\n' "$2" "$1"
     rm -f "$2"
     return 1
@@ -168,30 +159,27 @@ resolve_addon() {
   esac
 
   # no need to resolve this core dependency
-  if [ "${addon_id}" = xbmc.python ]
-  then
+  if [ "${addon_id}" = xbmc.python ]; then
     echo 0 - -
     return
   fi
 
   printf 1>&2 -- 'Resolving %s...\n' "$addon_id"
 
-  if [ -d ~/.kodi/addons/"$addon_id" ]
-  then
+  if [ -d ~/.kodi/addons/"$addon_id" ]; then
     printf 1>&2 -- 'Skipping - %s already installed\n' "$addon_id"
     echo 0 - -
     return
   fi
 
-  if [ -n "${url:-}" ]
-  then
+  if [ -n "${url:-}" ]; then
     case "$addon_id" in
       repository.*)
         path="$(path_for_zip_url "$url")"
         # output addon download info
         if fetch_zip "$url" "$path"; then
           echo "0 ${addon_id} ${path}"
-        fi
+      fi
         return
         ;;
       *)
@@ -203,40 +191,34 @@ resolve_addon() {
   fi
 
   # search addon_id in all enabled repositories
-  for repo in ${ENABLED_REPOSITORIES?}
-  do
+  for repo in ${ENABLED_REPOSITORIES?}; do
     printf 1>&2 -- 'Checking for addon %s in %s...\n' "$addon_id" "$repo"
 
-    if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]
-    then
+    if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]; then
       printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$addon_id" "$repo"
       continue
     fi
 
     datadir_count=0
 
-    while read -r datadir
-    do
-      if [ -z "$datadir" ]
-      then
+    while read -r datadir; do
+      if [ -z "$datadir" ]; then
         continue
       fi
 
-      datadir_count="$(( datadir_count + 1 ))"
+      datadir_count="$((datadir_count + 1))"
 
       url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
       path="$(path_for_zip_url "$url")"
 
-      if fetch_zip "$url" "$path"
-      then
+      if fetch_zip "$url" "$path"; then
         echo "${version} ${addon_id} ${path}"
       fi
     done <<REPO_DATA
 $(repo_data "$repo" | addon_datadirs 2>/dev/null)
 REPO_DATA
 
-    if [ "$datadir_count" -eq 0 ]
-    then
+    if [ "$datadir_count" -eq 0 ]; then
       datadir="$(repo_url "$repo")"
       printf 1>&2 -- 'Unable to find datadir in %s repository data; using default datadir "%s"\n' "$repo" "$datadir"
 
@@ -244,17 +226,14 @@ REPO_DATA
       path="$(path_for_zip_url "$url")"
 
       # output addon download info
-      if fetch_zip "$url" "$path"
-      then
+      if fetch_zip "$url" "$path"; then
         echo "${version} ${addon_id} ${path}"
       fi
     fi
 
     # search requisite addons in all repositories
-    while read -r dependency
-    do
-      if [ -n "$dependency" ]
-      then
+    while read -r dependency; do
+      if [ -n "$dependency" ]; then
         resolve_addon "$dependency" || return
       else
         printf 1>&2 -- 'Could not find addon %s in %s repository data\n' "$addon_id" "$repo"
@@ -274,8 +253,7 @@ enable_addon() {
     printf 1>&2 -- 'Usage: enable_addon <addon-id> <kodi-version>\n'
   }
 
-  if [ "$#" -ne 2 ]
-  then
+  if [ "$#" -ne 2 ]; then
     enable_addon_usage
     return 1
   fi
@@ -286,31 +264,30 @@ enable_addon() {
   kodi_version="$1"
   shift
 
-  if [ -z "$addon_id" ] || [ -z "$kodi_version" ]
-  then
+  if [ -z "$addon_id" ] || [ -z "$kodi_version" ]; then
     printf 1>&2 -- 'Error: addon ID and Kodi version cannot be empty.\n'
     enable_addon_usage
     return 1
   fi
 
-  for db in ~/.kodi/userdata/Database/Addons*.db
-  do
-    if [ -f "$db" ]
-    then
+  for db in ~/.kodi/userdata/Database/Addons*.db; do
+    if [ -f "$db" ]; then
       break
     else
       unset db
     fi
   done
 
-  if [ -z "${db:-}" ]
-  then
+  if [ -z "${db:-}" ]; then
     case "${kodi_version%%.*}" in
-      16) db=~/.kodi/userdata/Database/Addons20.db
+      16)
+          db=~/.kodi/userdata/Database/Addons20.db
           ;;
-      17|18|19) db=~/.kodi/userdata/Database/Addons27.db
+      17 | 18 | 19)
+                db=~/.kodi/userdata/Database/Addons27.db
           ;;
-      20) db=~/.kodi/userdata/Database/Addons33.db
+      20)
+          db=~/.kodi/userdata/Database/Addons33.db
           ;;
       *)
         printf 1>&2 -- 'enable_addon: unsupported Kodi version: %s\n' "$kodi_version"
@@ -320,8 +297,7 @@ enable_addon() {
   fi
 
   # init empty db
-  if ! [ -f "$db" ]
-  then
+  if ! [ -f "$db" ]; then
     mkdir -p "${db%/*}"
     sqlite3 "$db" <<"HERE"
 CREATE TABLE version (idVersion integer, iCompressCount integer);
@@ -345,8 +321,7 @@ INSERT INTO version (idVersion, iCompressCount) VALUES (27, 0);
 HERE
   fi
 
-  if ! sqlite3 "$db" 'SELECT * from installed where addonID="'"$addon_id"'"' | grep -Fq "$addon_id"
-  then
+  if ! sqlite3 "$db" 'SELECT * from installed where addonID="'"$addon_id"'"' | grep -Fq "$addon_id"; then
     printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$addon_id"
     sqlite3 "$db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$addon_id"'", 1, "1970-01-01 00:00:01");'
   else
@@ -359,22 +334,18 @@ cache_repositories
 
 found_addons=0
 
-while read -r addon_id path use
-do
+while read -r addon_id path use; do
   # Not selected version of addon
-  if [ "${use:-0}" != 1 ]
-  then
+  if [ "${use:-0}" != 1 ]; then
     continue
   fi
 
-  if [ "$addon_id" = "$target_addon_id" ] || [ "$path" = - ]
-  then
-    found_addons="$(( found_addons + 1 ))"
+  if [ "$addon_id" = "$target_addon_id" ] || [ "$path" = - ]; then
+    found_addons="$((found_addons + 1))"
   fi
 
   # No addon found, or addon already installed
-  if [ -z "$addon_id" ] || [ "$path" = - ]
-  then
+  if [ -z "$addon_id" ] || [ "$path" = - ]; then
     continue
   fi
 
@@ -385,8 +356,7 @@ done <<RESOLVE_ADDON
 $(yield_addons "$target_addon_id")
 RESOLVE_ADDON
 
-if [ "$found_addons" -eq 0 ]
-then
+if [ "$found_addons" -eq 0 ]; then
   printf 1>&2 -- 'No such addon (%s) found (or already installed)\n' "$target_addon_id"
   enable_addon "$target_addon_id" "$kodi_version" || exit
   printf 1>&2 -- 'Looks like addon %s is a core addon\n' "$target_addon_id"
