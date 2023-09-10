@@ -116,72 +116,15 @@
   - configure
   - get_addons
 
-# get_kodi_addon.sh fails on LibreELEC due to bash-ism
-- name: Stage addon-install script into ~/.kodi
-  copy:
-    src: "get_kodi_addon.sh"
-    dest: "~{{ kodi_user }}/.kodi"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  when: ansible_distribution != 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Stage addon-enable script into ~/.kodi
-  copy:
-    src: "enable_kodi_addon.sh"
-    dest: "~{{ kodi_user }}/.kodi"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  tags:
-  - get_addons
-
-- name: Stage repositories.sh
-  template:
-    src: repositories.sh.j2
-    dest: "~{{ kodi_user }}/.kodi/repositories.sh"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  when: "ansible_distribution != 'LibreELEC'"
-  tags:
-  - get_addons
-
 - name: Get Kodi addons
-  command:
-    cmd: '~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}'
+  script:
+    cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
   become: True
-  when: ansible_distribution != 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Create addon directories (LibreELEC)
-  file:
-    path: "~{{ kodi_user }}/.kodi/addons/{{ item }}"
-    state: directory
-  with_items: "{{ kodi_addons }}"
-  when: ansible_distribution == 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Get Kodi addons (LibreELEC)
-  template:
-    src: addon.xml.j2
-    dest: "~{{ kodi_user }}/.kodi/addons/{{ item }}/addon.xml"
-    force: False
-  with_items: "{{ kodi_addons | reject('match', '^repository.') | list }}"
-  when: "ansible_distribution == 'LibreELEC'"
-  tags:
-  - get_addons
-
-- name: Enable Kodi addons (LibreELEC/OSMC)
-  command:
-    cmd: "~{{ kodi_user }}/.kodi/enable_kodi_addon.sh {{ item }} {{ kodi_version }}"
-  with_items: "{{ kodi_addons }}"
-  become_user: "{{ kodi_user }}"
-  become: True
-  when: "ansible_distribution == 'LibreELEC' or ansible_distribution == 'OSMC'"
+  environment:
+    REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
+    ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
   tags:
   - get_addons
 
