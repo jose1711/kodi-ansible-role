@@ -29,6 +29,10 @@ if command -v xmllint 1>/dev/null 2>&1; then
   addon_imports() {
     xmllint --xpath '//addon[@id="'"${1?}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"'
   }
+
+  addon_imports_singleton() {
+    xmllint --xpath '//requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"'
+  }
 elif command -v python 1>/dev/null 2>&1; then
   python_xpath() {
     python -c '
@@ -59,10 +63,22 @@ for res in root.findall(sys.argv[1]):
   addon_imports() {
     python_xpath './/addon[@id="'"${1?}"'"]/requires/import' addon
   }
+
+  addon_imports_singleton() {
+    python_xpath './/requires/import' addon
+  }
 else
   printf -- '%s: XML parsing prerequisites are missing (have neither xmllint nor python); cannot proceed.\n' "${0##*/}"
   exit 127
 fi
+
+addon_data() {
+  cat ~/.kodi/addons/"${1?}"/addon.xml
+}
+
+addon_installed() {
+  [ -d ~/.kodi/addons/"${1?}" ]
+}
 
 addon_version() {
   addon_versions "$@" | sort -Vr | head -n 1
@@ -134,6 +150,10 @@ fetch_zip() {
   fi
 }
 
+install_zip() {
+  unzip -q -o -d ~/.kodi/addons "${1?}"
+}
+
 resolve_addon() {
   addon_id="$1"
   shift
@@ -153,70 +173,68 @@ resolve_addon() {
 
   printf 1>&2 -- 'Resolving %s...\n' "$addon_id"
 
-  if [ -d ~/.kodi/addons/"$addon_id" ]; then
+  search_addon() { :;  }
+
+  if addon_installed "$addon_id"; then
     printf 1>&2 -- 'Skipping - %s already installed\n' "$addon_id"
     echo 0 - -
-    return
-  fi
+  elif [ -n "${url:-}" ]; then
+    printf 1>&2 -- 'Fetching addon %s from %s...\n' "$addon_id" "$url"
 
-  if [ -n "${url:-}" ]; then
-    case "$addon_id" in
-      repository.*)
+    path="$(path_for_zip_url "$url")"
+
+    # output addon download info
+    if fetch_zip "$url" "$path" && install_zip "$path" && enable_addon "$addon_id" "$kodi_version"; then
+      echo "0 ${addon_id} -"
+    fi
+  else
+    search_addon() {
+      repo="$1"
+      shift
+
+      printf 1>&2 -- 'Checking for addon %s in %s...\n' "$addon_id" "$repo"
+
+      if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]; then
+        printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$addon_id" "$repo"
+      fi
+
+      datadir_count=0
+
+      while read -r datadir; do
+        if [ -z "$datadir" ]; then
+          continue
+        fi
+
+        datadir_count="$((datadir_count + 1))"
+
+        url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
         path="$(path_for_zip_url "$url")"
+
+        if fetch_zip "$url" "$path"; then
+          echo "${version} ${addon_id} ${path}"
+        fi
+      done <<REPO_DATA
+$(repo_data "$repo" | addon_datadirs 2>/dev/null)
+REPO_DATA
+
+      if [ "$datadir_count" -eq 0 ]; then
+        datadir="$(repo_url "$repo")"
+        printf 1>&2 -- 'Unable to find datadir in %s repository data; using default datadir "%s"\n' "$repo" "$datadir"
+
+        url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
+        path="$(path_for_zip_url "$url")"
+
         # output addon download info
         if fetch_zip "$url" "$path"; then
-          echo "0 ${addon_id} ${path}"
+          echo "${version} ${addon_id} ${path}"
+        fi
       fi
-        return
-        ;;
-      *)
-        printf 1>&2 -- 'Sorry, oneshot downloads are not supported for addons of type "%s" (%s)...\n' \
-          "${addon_id%%.*}" "$addon_id"
-        return 1
-        ;;
-    esac
+    }
   fi
 
   # search addon_id in all enabled repositories
   for repo in ${ENABLED_REPOSITORIES?}; do
-    printf 1>&2 -- 'Checking for addon %s in %s...\n' "$addon_id" "$repo"
-
-    if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]; then
-      printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$addon_id" "$repo"
-      continue
-    fi
-
-    datadir_count=0
-
-    while read -r datadir; do
-      if [ -z "$datadir" ]; then
-        continue
-      fi
-
-      datadir_count="$((datadir_count + 1))"
-
-      url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
-      path="$(path_for_zip_url "$url")"
-
-      if fetch_zip "$url" "$path"; then
-        echo "${version} ${addon_id} ${path}"
-      fi
-    done <<REPO_DATA
-$(repo_data "$repo" | addon_datadirs 2>/dev/null)
-REPO_DATA
-
-    if [ "$datadir_count" -eq 0 ]; then
-      datadir="$(repo_url "$repo")"
-      printf 1>&2 -- 'Unable to find datadir in %s repository data; using default datadir "%s"\n' "$repo" "$datadir"
-
-      url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
-      path="$(path_for_zip_url "$url")"
-
-      # output addon download info
-      if fetch_zip "$url" "$path"; then
-        echo "${version} ${addon_id} ${path}"
-      fi
-    fi
+    search_addon "$repo"
 
     # search requisite addons in all repositories
     while read -r dependency; do
@@ -229,6 +247,18 @@ REPO_DATA
 $(repo_data "$repo" | addon_imports "$addon_id" 2>/dev/null)
 REPO_DATA
   done
+
+  if addon_installed "$addon_id"; then
+    while read -r dependency; do
+      if [ -n "$dependency" ]; then
+        resolve_addon "$dependency" || return
+      else
+        printf 1>&2 -- 'Could not find addon %s in %s addon data\n' "$addon_id" "$addon_id"
+      fi
+    done <<ADDON_DATA
+$(addon_data "$addon_id" | addon_imports_singleton 2>/dev/null)
+ADDON_DATA
+  fi
 }
 
 yield_addons() {
@@ -349,7 +379,7 @@ while read -r addon_id path use; do
     continue
   fi
 
-  unzip -q -d ~/.kodi/addons "$path"
+  install_zip "$path"
 
   enable_addon "$addon_id" "$kodi_version"
 done <<RESOLVE_ADDON
