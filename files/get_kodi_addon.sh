@@ -266,14 +266,16 @@ REPO_DATA
     }
   fi
 
+  rc=0
+
   # search addon_id in all enabled repositories
   for repo in ${ENABLED_REPOSITORIES?}; do
-    search_addon "$repo"
+    search_addon "$repo" || rc="$?"
 
     # search requisite addons in all repositories
     while read -r dependency; do
       if [ -n "$dependency" ]; then
-        resolve_addon "$dependency" || return
+        resolve_addon "$dependency" || rc="$?"
       else
         printf 1>&2 -- 'Could not find addon %s in %s repository data\n' "$addon_id" "$repo"
       fi
@@ -285,7 +287,7 @@ REPO_DATA
   if addon_installed "$addon_id"; then
     while read -r dependency; do
       if [ -n "$dependency" ]; then
-        resolve_addon "$dependency" || return
+        resolve_addon "$dependency" || rc="$?"
       else
         printf 1>&2 -- 'Could not find addon %s in %s addon data\n' "$addon_id" "$addon_id"
       fi
@@ -293,6 +295,8 @@ REPO_DATA
 $(addon_data "$addon_id" | addon_imports_singleton 2>/dev/null)
 ADDON_DATA
   fi
+
+  return "$rc"
 }
 
 yield_addons() {
