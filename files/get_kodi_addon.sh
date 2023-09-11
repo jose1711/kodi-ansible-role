@@ -18,6 +18,17 @@ _curl() {
 }
 
 if command -v xmllint 1>/dev/null 2>&1; then
+  xmllint_filter_attr_values() {
+    while read -r attrdef; do
+      attrval="${attrdef#*"${1?}=\""}"
+      printf -- '%s\n' "${attrval%'"'}"
+    done
+  }
+
+  xmllint_filter_addon() {
+    xmllint_filter_attr_values addon
+  }
+
   addon_versions() {
     xmllint --xpath 'string(//addon[@id="'"${1?}"'"]/@version)' -
   }
@@ -27,11 +38,11 @@ if command -v xmllint 1>/dev/null 2>&1; then
   }
 
   addon_imports() {
-    xmllint --xpath '//addon[@id="'"${1?}"'"]/requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"'
+    xmllint --xpath '//addon[@id="'"${1?}"'"]/requires/import/@addon' - 2>/dev/null | xmllint_filter_addon
   }
 
   addon_imports_singleton() {
-    xmllint --xpath '//requires/import/@addon' - 2>/dev/null | tr ' ' '\n' | awk -F= '{print $2}' | tr -d '"'
+    xmllint --xpath '//requires/import/@addon' - 2>/dev/null | xmllint_filter_addon
   }
 elif command -v python 1>/dev/null 2>&1; then
   python_xpath() {
