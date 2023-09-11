@@ -7,22 +7,9 @@
 # $1 = addon_id
 # $2 = major kodi version
 
-set -eu
-
 usage() {
   printf 1>&2 -- 'Usage: %s <addon-id> <kodi-version>\n' "${0##*/}"
 }
-
-if [ "$#" -ne 2 ]; then
-  usage
-  exit 1
-fi
-
-target_addon_id="$1"
-shift
-
-kodi_version="$1"
-shift
 
 _curl() {
   # Identify ourselves as Kodi.  Stuff may break if we do not.  See, e.g.,
@@ -329,6 +316,19 @@ HERE
     sqlite3 "$db" 'UPDATE installed SET enabled=1 WHERE addonId="'"$addon_id"'"'
   fi
 }
+
+set -eu
+
+if [ "$#" -ne 2 ]; then
+  usage
+  exit 1
+fi
+
+target_addon_id="$1"
+shift
+
+kodi_version="$1"
+shift
 
 cache_repositories
 
