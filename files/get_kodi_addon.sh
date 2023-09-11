@@ -189,10 +189,14 @@ install_zip() {
 }
 
 resolve_addon() {
-  addon_id="$1"
+  addon_id="${1?}"
   shift
 
   case "$addon_id" in
+    '')
+      echo 1>&2 'Error: "" is not a valid addon ID'
+      return 1
+      ;;
     *=*)
       url="${addon_id#*=}"
       addon_id="${addon_id%%=*}"
