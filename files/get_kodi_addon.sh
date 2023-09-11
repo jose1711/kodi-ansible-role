@@ -375,7 +375,7 @@ while read -r addon_id path use; do
   fi
 
   # No addon found, or addon already installed
-  if [ -z "$addon_id" ] || [ "$path" = - ]; then
+  if [ "${addon_id:-}" = - ] || [ "$path" = - ]; then
     continue
   fi
 
