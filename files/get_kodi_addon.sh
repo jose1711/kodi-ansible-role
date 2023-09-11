@@ -44,6 +44,29 @@ if command -v xmllint 1>/dev/null 2>&1; then
   addon_imports_singleton() {
     xmllint --xpath '//requires/import/@addon' - 2>/dev/null | xmllint_filter_addon
   }
+elif command -v xmlstarlet 1>/dev/null 2>&1; then
+  xmlstarlet_select_value() {
+    # -T == "text (not XML)"
+    # -t == "template"
+    # -v == "value (not element, etc.)"
+    xmlstarlet sel -T -t -v "$@"
+  }
+
+  addon_versions() {
+    xmlstarlet_select_value 'string(//addon[@id="'"${1?}"'"]/@version)'
+  }
+
+  addon_datadirs() {
+    xmlstarlet_select_value '//datadir/text()'
+  }
+
+  addon_imports() {
+    xmlstarlet_select_value '//addon[@id="'"${1?}"'"]/requires/import/@addon' 2>/dev/null
+  }
+
+  addon_imports_singleton() {
+    xmlstarlet_select_value '//requires/import/@addon' 2>/dev/null
+  }
 elif command -v python 1>/dev/null 2>&1; then
   python_xpath() {
     python -c '
