@@ -155,7 +155,7 @@
     owner: "{{ kodi_user }}"
   tags:
   - get_addons
-  with_items: "{{ kodi_addons_upload }}"
+  with_items: "{{ kodi_addons_upload | default([]) }}"
 
 - name: Get addon settings for upload
   set_fact:
@@ -167,7 +167,7 @@
     src: "{{ item }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
     owner: "{{ kodi_user }}"
-  with_items: "{{ kodi_addon_settings_upload }}"
+  with_items: "{{ kodi_addon_settings_upload | default([]) }}"
   tags:
   - copy_addon_settings
 
