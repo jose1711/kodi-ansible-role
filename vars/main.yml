@@ -1,2 +1,33 @@
 ---
-# vars file for kodi
+
+kodi_config_cond:
+  - cond: "{{ kodi_setting_level is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/general/settinglevel", value: "{{ kodi_setting_level | default(3) | int }}", type: "string"}
+  - cond: "{{ kodi_language is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.language\"]", value: "resource.language.{{ kodi_language | default('') }}", type: "string"}
+  - cond: "{{ kodi_locale_country is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.country\"]", value: "{{ kodi_locale_country | default('') }}", type: "string"}
+  - cond: "{{ kodi_locale_timezone_country is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.timezonecountry\"]", value: "{{ kodi_locale_timezone_country | default('') }}", type: "string"}
+  - cond: "{{ kodi_subtitles_languages is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"subtitles.languages\"]", value: "{{ kodi_subtitles_languages | default('') }}", type: "string"}
+  - cond: "{{ kodi_weather_provider is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"weather.addon\"]", value: "{{ kodi_weather_provider | default('') }}", type: "string"}
+  - cond: "{{ kodi_unknown_addon_sources_enabled is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"addons.unknownsources\"]", value: "{{ kodi_unknown_addon_sources_enabled | default(False) | bool | ternary('true', 'false') }}", type: "bool"}
+  - cond: "{{ kodi_webserver_enabled is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserver\"]", value: "{{ kodi_webserver_enabled | default(False) | bool | ternary('true', 'false') }}", type: "bool"}
+  - cond: "{{ kodi_webserver_port is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverport\"]", value: "{{ kodi_webserver_port | default(8080) | int }}", type: "string"}
+  - cond: "{{ kodi_webserver_user is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverusername\"]", value: "{{ kodi_webserver_user | default('') }}", type: "string"}
+  - cond: "{{ kodi_webserver_password is defined }}"
+    config: {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverpassword\"]", value: "{{ kodi_webserver_password | default('') }}", type: "string"}
+
+kodi_config_cond_resolved: "{{ kodi_config_cond | selectattr('cond') | map(attribute='config') | list }}"
+
+kodi_config_final: "{{ kodi_config_cond_resolved + (kodi_config | default([])) }}"
+
+kodi_repository_names: "{{ kodi_repositories | map('split', '=') | map(attribute=0) | list }}"
+
+kodi_addon_names: "{{ kodi_addons | map('split', '=') | map(attribute=0) | list }}"

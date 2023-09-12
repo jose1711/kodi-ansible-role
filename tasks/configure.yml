@@ -4,7 +4,7 @@
     xpath: '/{{ item.key }}'
     value: '{{ item.value }}'
     pretty_print: True
-  with_items: "{{ kodi_config }}"
+  with_items: "{{ kodi_config_final }}"
   tags: configure
 
 - name: Configure xml config files - add tag
@@ -14,7 +14,7 @@
     value: '{{ item.type }}'
     attribute: "type"
     pretty_print: True
-  with_items: "{{ kodi_config }}"
+  with_items: "{{ kodi_config_final }}"
   tags: configure
 
 - name: Drop default attribute
@@ -23,5 +23,5 @@
     xpath: '/{{ item.key }}/@default'
     state: absent
     pretty_print: True
-  with_items: "{{ kodi_config }}"
+  with_items: "{{ kodi_config_final }}"
   tags: configure

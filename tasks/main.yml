@@ -1,4 +1,11 @@
 ---
+- name: Include default configuration
+  include_vars: "default.yml"
+  when: 'kodi_include_default_config | default(False) | bool'
+  tags:
+  - install
+  - configure
+
 # tasks file for kodi-ansible-role
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
@@ -8,8 +15,8 @@
 
 - name: Set kodi_user to osmc (OSMC)
   set_fact:
-    kodi_user: 'osmc'
-  when: ansible_distribution == 'OSMC'
+    kodi_user: "osmc"
+  when: "ansible_distribution == 'OSMC'"
 
 - name: Create Kodi user
   user:
@@ -17,7 +24,7 @@
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
     append: True
-  when: ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
+  when: "ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
   tags:
   - configure
   - get_addons
@@ -47,7 +54,7 @@
   systemd:
     name: kodi
     state: stopped
-  when: kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'
+  when: "kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'"
   tags:
   - configure
 
@@ -55,20 +62,21 @@
   systemd:
     name: mediacenter
     state: stopped
-  when: kodi_running.rc == 0 and ansible_distribution == 'OSMC'
+  when: "kodi_running.rc == 0 and ansible_distribution == 'OSMC'"
   tags:
   - configure
 
 - name: Stop Kodi
   fail:
     msg: "Stop Kodi prior to executing this playbook"
-  when: kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'
+  when: "kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
   tags:
   - configure
 
 # Setup apt repo (Ubuntu only)"
 - name: Add Kodi ppa
-  apt_repository: repo='ppa:team-xbmc/ppa'
+  apt_repository:
+    repo: "ppa:team-xbmc/ppa"
   when: "ansible_distribution == 'Ubuntu'"
   tags:
   - install
@@ -85,11 +93,11 @@
   register: kodi_version
   vars:
     kodi_query_version:
-      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}' | cut -d'.' -f1"
-      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}' | cut -d'.' -f1"
-      'Archlinux': "pacman -Q kodi | awk '{print $2}' | cut -d'.' -f1"
-      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
-      'OSMC': "/usr/lib/kodi/kodi.bin --version | head -1 | awk -F. '{print $1}' "
+      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
+      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
+      'Archlinux': "pacman -Q kodi | awk '{print $2}'"
+      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
+      'OSMC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
   check_mode: no
   tags:
   - get_addons
@@ -115,72 +123,15 @@
   - configure
   - get_addons
 
-# get_kodi_addon.sh fails on LibreELEC due to bash-ism
-- name: Stage addon-install script into ~/.kodi
-  copy:
-    src: "get_kodi_addon.sh"
-    dest: "~{{ kodi_user }}/.kodi"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  when: ansible_distribution != 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Stage addon-enable script into ~/.kodi
-  copy:
-    src: "enable_kodi_addon.sh"
-    dest: "~{{ kodi_user }}/.kodi"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  tags:
-  - get_addons
-
-- name: Stage repositories.sh
-  template:
-    src: repositories.sh.j2
-    dest: "~{{ kodi_user }}/.kodi/repositories.sh"
-    owner: "{{ kodi_user }}"
-    mode: "0700"
-  when: "ansible_distribution != 'LibreELEC'"
-  tags:
-  - get_addons
-
 - name: Get Kodi addons
-  command:
-    cmd: '~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}'
-  with_items: "{{ kodi_addons }}"
+  script:
+    cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
+  with_items: "{{ kodi_addon_names }}"
   become_user: "{{ kodi_user }}"
   become: True
-  when: ansible_distribution != 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Create addon directories (LibreELEC)
-  file:
-    path: "~{{ kodi_user }}/.kodi/addons/{{ item }}"
-    state: directory
-  with_items: "{{ kodi_addons }}"
-  when: ansible_distribution == 'LibreELEC'
-  tags:
-  - get_addons
-
-- name: Get Kodi addons (LibreELEC)
-  template:
-    src: addon.xml.j2
-    dest: "~{{ kodi_user }}/.kodi/addons/{{ item }}/addon.xml"
-    force: False
-  with_items: "{{ kodi_addons | reject('match', '^repository.') | list }}"
-  when: "ansible_distribution == 'LibreELEC'"
-  tags:
-  - get_addons
-
-- name: Enable Kodi addons (LibreELEC/OSMC)
-  command:
-    cmd: "~{{ kodi_user }}/.kodi/enable_kodi_addon.sh {{ item }} {{ kodi_version }}"
-  with_items: "{{ kodi_addons }}"
-  become_user: "{{ kodi_user }}"
-  become: True
-  when: "ansible_distribution == 'LibreELEC' or ansible_distribution == 'OSMC'"
+  environment:
+    REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
+    ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
   tags:
   - get_addons
 
@@ -192,24 +143,31 @@
   - configure
   - get_addons
 
+- name: Get addons for upload
+  set_fact:
+    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
+  with_items: "{{ kodi_addon_names | select('match', '^repository.') | list }}"
+
 - name: Copy Kodi repository addons
   copy:
-    src: "addons/{{ item }}"
+    src: "{{ item }}"
     dest: "~{{ kodi_user }}/.kodi/addons"
     owner: "{{ kodi_user }}"
-  when: "ansible_distribution == 'LibreELEC'"
-  with_items: "{{ kodi_addons | select('match', '^repository.') | list }}"
   tags:
   - get_addons
+  with_items: "{{ kodi_addons_upload }}"
+
+- name: Get addon settings for upload
+  set_fact:
+    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
+  with_items: "{{ kodi_addon_names }}"
 
 - name: Copy addon settings
   copy:
-    src: "addon_data/{{ item }}"
+    src: "{{ item }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
     owner: "{{ kodi_user }}"
-  with_items: "{{ kodi_addons }}"
-  ignore_errors: True
-  failed_when: False
+  with_items: "{{ kodi_addon_settings_upload }}"
   tags:
   - copy_addon_settings
 
@@ -217,13 +175,13 @@
   file:
     path: "~{{ kodi_user }}/.kodi/{{ item }}"
     state: directory
-  with_items: "{{ kodi_config | map(attribute='file') | map('dirname') | unique }}"
+  with_items: "{{ kodi_config_final | map(attribute='file') | map('dirname') | unique }}"
   tags: configure
 
 - name: Check if xml config files exist
   stat:
     path: "~{{ kodi_user }}/.kodi/{{ item }}"
-  with_items: "{{ kodi_config | map(attribute='file') | unique }}"
+  with_items: "{{ kodi_config_final | map(attribute='file') | unique }}"
   tags: configure
   register: stat_result
 
@@ -295,7 +253,7 @@
   systemd:
     name: kodi
     state: started
-  when: ansible_distribution == 'LibreELEC'
+  when: "ansible_distribution == 'LibreELEC'"
   tags:
   - configure
 
@@ -303,6 +261,6 @@
   systemd:
     name: mediacenter
     state: started
-  when: ansible_distribution == 'OSMC'
+  when: "ansible_distribution == 'OSMC'"
   tags:
   - configure
