@@ -19,6 +19,14 @@ filename = os.path.join('/storage/.kodi', filename)
 tree = et.parse(filename)
 root = tree.getroot()
 
+tag, *rest = path.split('/')
+
+if root.tag != tag:
+    print('Document "{0}" uses root tag "{1}", not the supplied tag "{2}"'.format(filename, root.tag, tag))
+    sys.exit(1)
+
+path = '/'.join(rest)
+
 # do we need to create this node/tree?
 match = root.find(path)
 
