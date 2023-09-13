@@ -23,7 +23,7 @@ root = tree.getroot()
 match = root.find(path)
 
 # ok, yes we do
-if not match:
+if match is None:
     path_components = re.findall(r'[a-z0-9]+(?:\[@[^]]+\])?', path)
     mount_element = root
     for node in path_components:
