@@ -6,3 +6,6 @@ kodi_systemd_service: kodi
 
 kodi_check_process_cmd: "ps ux | grep -wq [k]odi.bin"
 kodi_check_process_executable: "/usr/bin/sh"
+
+kodi_query_version_cmd: "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
+kodi_query_version_executable: "{{ kodi_check_process_executable }}"

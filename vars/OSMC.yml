@@ -11,3 +11,6 @@ kodi_systemd_service: mediacenter
 
 kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'"
 kodi_check_process_executable: "/bin/bash"
+
+kodi_query_version_cmd: "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
+kodi_query_version_executable: "{{ kodi_check_process_executable }}"

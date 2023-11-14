@@ -83,25 +83,22 @@
   tags:
   - install
 
-- name: Query Kodi (major) version
-  shell: "{{ kodi_query_version[ansible_os_family] }}"
-  register: kodi_version
-  vars:
-    kodi_query_version:
-      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
-      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
-      'Archlinux': "pacman -Q kodi | awk '{print $2}'"
-      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
-      'OSMC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
-  check_mode: no
-  tags:
-  - get_addons
+- when: 'kodi_version is not defined'
+  block:
+  - name: Query Kodi (major) version
+    shell:
+      cmd: "{{ kodi_query_version_cmd | mandatory }}"
+      executable: "{{ kodi_query_version_executable | mandatory }}"
+    register: kodi_query_version_result
+    check_mode: no
+    tags:
+    - get_addons
 
-- name: Set Kodi version as ansible fact
-  set_fact:
-    kodi_version: "{{ kodi_version.stdout }}"
-  tags:
-  - get_addons
+  - name: Set Kodi version as ansible fact
+    set_fact:
+      kodi_version: "{{ kodi_query_version_result.stdout }}"
+    tags:
+    - get_addons
 
 - name: Show Kodi version
   debug:

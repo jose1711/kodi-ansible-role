@@ -108,6 +108,9 @@ Role Variables
 - `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined, except on LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.
 - `kodi_check_process_cmd`: the command to use for checking whether Kodi is currently running (Kodi must be shut off before changing its configuration).  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_check_process_executable`: the executable to use for running `kodi_check_process_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
+- `kodi_query_version_cmd`: the command to use for determining the version of Kodi in use.  This command only runs if `kodi_version` is undefined.  See [the platform-specific variables files](/vars) for the values of this variable.
+- `kodi_query_version_executable`: the executable to use for running `kodi_query_version_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
+- `kodi_version`: the version of Kodi in use.  Default: determined by running `kodi_query_version_cmd`.
 
 Installing Addons
 -----------------
