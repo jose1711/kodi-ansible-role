@@ -13,11 +13,6 @@
   - install
   - configure
 
-- name: Set kodi_user to osmc (OSMC)
-  set_fact:
-    kodi_user: "osmc"
-  when: "ansible_distribution == 'OSMC'"
-
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"

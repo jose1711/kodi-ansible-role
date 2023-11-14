@@ -4,4 +4,5 @@ packages:
   - sqlite3
   - file
 
+kodi_user: osmc
 kodi_user_create: False
