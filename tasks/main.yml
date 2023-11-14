@@ -78,8 +78,8 @@
 
 - name: Install Kodi and related apps
   package:
-    name: "{{ packages }}"
-  when: "ansible_distribution != 'LibreELEC'"
+    name: "{{ packages | default([]) }}"
+  when: "(packages | default([]) | length) > 0"
   tags:
   - install
 
