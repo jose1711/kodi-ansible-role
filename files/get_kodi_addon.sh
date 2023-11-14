@@ -60,9 +60,9 @@ fi
 
 if command -v xmllint 1>/dev/null 2>&1; then
   xmllint_filter_attr_values() {
-    while read -r attrdef; do
-      attrval="${attrdef#*"${1?}=\""}"
-      printf -- '%s\n' "${attrval%'"'}"
+    while read -r __xmllint_filter_attr_values_attrdef; do
+      __xmllint_filter_attr_values_attrval="${__xmllint_filter_attr_values_attrdef#*"${1?}=\""}"
+      printf -- '%s\n' "${__xmllint_filter_attr_values_attrval%'"'}"
     done
   }
 
@@ -160,37 +160,38 @@ addon_version() {
 }
 
 cache_repositories() {
-  for repo_data in ${REPOSITORIES?}; do
-    name="${repo_data%=*}"
-    url="${repo_data#*=}"
+  for __cache_repositories_repo_data in ${REPOSITORIES?}; do
+    __cache_repositories_name="${__cache_repositories_repo_data%=*}"
+    __cache_repositories_url="${__cache_repositories_repo_data#*=}"
 
-    data_path="${TMPDIR:-/tmp}/${name}.xml"
+    __cache_repositories_data_path="${TMPDIR:-/tmp}/${__cache_repositories_name}.xml"
 
     # only download if the file is missing
-    if [ -f "$data_path" ]; then
-      printf 1>&2 -- 'Already cached name: %s, url: %s\n' "$name" "$url"
+    if [ -f "$__cache_repositories_data_path" ]; then
+      printf 1>&2 -- 'Already cached name: %s, url: %s\n' "$__cache_repositories_name" "$__cache_repositories_url"
       continue
     fi
 
-    printf 1>&2 -- 'Caching name: %s, url: %s\n' "$name" "$url"
+    printf 1>&2 -- 'Caching name: %s, url: %s\n' "$__cache_repositories_name" "$__cache_repositories_url"
 
-    fetch_path="${data_path}.out"
+    __cache_repositories_fetch_path="${__cache_repositories_data_path}.out"
 
-    _curl -fsLS -o "$fetch_path" "$url" || {
-      rc="$?"
-      rm -f "$fetch_path"
+    _curl -fsLS -o "$__cache_repositories_fetch_path" "$__cache_repositories_url" || {
+      __cache_repositories_rc="$?"
+      rm -f "$__cache_repositories_fetch_path"
       continue
     }
 
     {
-      gunzip -c "$fetch_path" >"$data_path"  || mv -f "$fetch_path" "$data_path"
+      gunzip -c "$__cache_repositories_fetch_path" >"$__cache_repositories_data_path"  \
+        || mv -f "$__cache_repositories_fetch_path" "$__cache_repositories_data_path"
     } || {
-      rc="$?"
-      rm -f "$fetch_path" "$data_path"
+      __cache_repositories_rc="$?"
+      rm -f "$__cache_repositories_fetch_path" "$__cache_repositories_data_path"
     }
   done
 
-  return "${rc:-0}"
+  return "${__cache_repositories_rc:-0}"
 }
 
 repo_data() {
@@ -198,18 +199,21 @@ repo_data() {
 }
 
 repo_url() {
-  for repo_data in ${REPOSITORIES?}; do
-    name=${repo_data%=*}
-    url=${repo_data#*=}
-    if [ "$name" = "${1?}" ]; then
-      dirname "$url"
+  for __repo_url_repo_data in ${REPOSITORIES?}; do
+    __repo_url_name=${__repo_url_repo_data%=*}
+    __repo_url_url=${__repo_url_repo_data#*=}
+
+    if [ "$__repo_url_name" = "${1?}" ]; then
+      dirname "$__repo_url_url"
       return
     fi
   done
+
+  return 1
 }
 
 path_for_zip_url() {
-  printf -- '%s/%s' "${TMPDIR:-/tmp}" "$(printf -- '%s' "$1" | sed -e 's/[^[:alnum:]_.]/-/g')"
+  printf -- '%s/%s' "${TMPDIR:-/tmp}" "$(printf -- '%s' "${1?}" | sed -e 's/[^[:alnum:]_.]/-/g')"
 }
 
 fetch_zip() {
@@ -230,118 +234,123 @@ install_zip() {
 }
 
 resolve_addon() {
-  addon_id="${1?}"
+  __resolve_addon_addon_id="${1?}"
   shift
 
-  case "$addon_id" in
+  case "$__resolve_addon_addon_id" in
     '')
       echo 1>&2 'Error: "" is not a valid addon ID'
       return 1
       ;;
     *=*)
-      url="${addon_id#*=}"
-      addon_id="${addon_id%%=*}"
+      __resolve_addon_url="${__resolve_addon_addon_id#*=}"
+      __resolve_addon_addon_id="${__resolve_addon_addon_id%%=*}"
+      ;;
+    *)
+      unset __resolve_addon_url
       ;;
   esac
 
   # no need to resolve this core dependency
-  if [ "${addon_id}" = xbmc.python ]; then
+  if [ "$__resolve_addon_addon_id" = xbmc.python ]; then
     echo 0 - -
     return
   fi
 
-  printf 1>&2 -- 'Resolving %s...\n' "$addon_id"
+  printf 1>&2 -- 'Resolving %s...\n' "$__resolve_addon_addon_id"
 
   search_addon() { :;  }
 
-  if addon_installed "$addon_id"; then
-    printf 1>&2 -- 'Skipping - %s already installed\n' "$addon_id"
+  if addon_installed "$__resolve_addon_addon_id"; then
+    printf 1>&2 -- 'Skipping - %s already installed\n' "$__resolve_addon_addon_id"
     echo 0 - -
-  elif [ -n "${url:-}" ]; then
-    printf 1>&2 -- 'Fetching addon %s from %s...\n' "$addon_id" "$url"
+  elif [ -n "${__resolve_addon_url:-}" ]; then
+    printf 1>&2 -- 'Fetching addon %s from %s...\n' "$__resolve_addon_addon_id" "$__resolve_addon_url"
 
-    path="$(path_for_zip_url "$url")"
+    __resolve_addon_path="$(path_for_zip_url "$__resolve_addon_url")"
 
     # output addon download info
-    if fetch_zip "$url" "$path" && install_zip "$path" && enable_addon "$addon_id" "$kodi_version"; then
-      echo "0 ${addon_id} -"
+    if fetch_zip "$__resolve_addon_url" "$__resolve_addon_path" && install_zip "$__resolve_addon_path" && enable_addon "$__resolve_addon_addon_id" "${kodi_version?}"; then
+      echo "0 ${__resolve_addon_addon_id} -"
     fi
   else
     search_addon() {
-      repo="$1"
+      __search_addon_repo="${1?}"
       shift
 
-      printf 1>&2 -- 'Checking for addon %s in %s...\n' "$addon_id" "$repo"
+      __search_addon_addon_id="${__resolve_addon_addon_id?}"
 
-      if ! version="$(repo_data "$repo" | addon_version "$addon_id")" || [ -z "$version" ]; then
-        printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$addon_id" "$repo"
+      printf 1>&2 -- 'Checking for addon %s in %s...\n' "$__search_addon_addon_id" "$__search_addon_repo"
+
+      if ! __search_addon_version="$(repo_data "$__search_addon_repo" | addon_version "$__search_addon_addon_id")" || [ -z "$__search_addon_version" ]; then
+        printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$__search_addon_addon_id" "$__search_addon_repo"
       fi
 
-      datadir_count=0
+      __search_addon_datadir_count=0
 
-      while read -r datadir; do
-        if [ -z "$datadir" ]; then
+      while read -r __search_addon_datadir; do
+        if [ -z "$__search_addon_datadir" ]; then
           continue
         fi
 
-        datadir_count="$((datadir_count + 1))"
+        __search_addon_datadir_count="$((__search_addon_datadir_count + 1))"
 
-        url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
-        path="$(path_for_zip_url "$url")"
+        __search_addon_url="${__search_addon_datadir}/${__search_addon_addon_id}/${__search_addon_addon_id}-${__search_addon_version}.zip"
+        __search_addon_path="$(path_for_zip_url "$__search_addon_url")"
 
-        if fetch_zip "$url" "$path"; then
-          echo "${version} ${addon_id} ${path}"
+        if fetch_zip "$__search_addon_url" "$__search_addon_path"; then
+          echo "${__search_addon_version} ${__search_addon_addon_id} ${__search_addon_path}"
         fi
       done <<REPO_DATA
-$(repo_data "$repo" | addon_datadirs 2>/dev/null)
+$(repo_data "$__search_addon_repo" | addon_datadirs 2>/dev/null)
 REPO_DATA
 
-      if [ "$datadir_count" -eq 0 ]; then
-        datadir="$(repo_url "$repo")"
-        printf 1>&2 -- 'Unable to find datadir in %s repository data; using default datadir "%s"\n' "$repo" "$datadir"
+      if [ "$__search_addon_datadir_count" -eq 0 ]; then
+        __search_addon_datadir="$(repo_url "$__search_addon_repo")"
+        printf 1>&2 -- 'Unable to find datadir in %s repository data; using default datadir "%s"\n' "$__search_addon_repo" "$__search_addon_datadir"
 
-        url="${datadir}/${addon_id}/${addon_id}-${version}.zip"
-        path="$(path_for_zip_url "$url")"
+        __search_addon_url="${__search_addon_datadir}/${__search_addon_addon_id}/${__search_addon_addon_id}-${__search_addon_version}.zip"
+        __search_addon_path="$(path_for_zip_url "$__search_addon_url")"
 
         # output addon download info
-        if fetch_zip "$url" "$path"; then
-          echo "${version} ${addon_id} ${path}"
+        if fetch_zip "$__search_addon_url" "$__search_addon_path"; then
+          echo "${__search_addon_version} ${__search_addon_addon_id} ${__search_addon_path}"
         fi
       fi
     }
   fi
 
-  rc=0
+  __resolve_addon_rc=0
 
   # search addon_id in all enabled repositories
-  for repo in ${ENABLED_REPOSITORIES?}; do
-    search_addon "$repo" || rc="$?"
+  for __resolve_addon_repo in ${ENABLED_REPOSITORIES?}; do
+    search_addon "$__resolve_addon_repo" || __resolve_addon_rc="$?"
 
     # search requisite addons in all repositories
-    while read -r dependency; do
-      if [ -n "$dependency" ]; then
-        resolve_addon "$dependency" || rc="$?"
+    while read -r __resolve_addon_dependency; do
+      if [ -n "$__resolve_addon_dependency" ]; then
+        (resolve_addon "$__resolve_addon_dependency") || __resolve_addon_rc="$?"
       else
-        printf 1>&2 -- 'Could not find addon %s in %s repository data\n' "$addon_id" "$repo"
+        printf 1>&2 -- 'Could not find addon %s in %s repository data\n' "$__resolve_addon_addon_id" "$__resolve_addon_repo"
       fi
     done <<REPO_DATA
-$(repo_data "$repo" | addon_imports "$addon_id" 2>/dev/null)
+$(repo_data "$__resolve_addon_repo" | addon_imports "$__resolve_addon_addon_id" 2>/dev/null)
 REPO_DATA
   done
 
-  if addon_installed "$addon_id"; then
-    while read -r dependency; do
-      if [ -n "$dependency" ]; then
-        resolve_addon "$dependency" || rc="$?"
+  if addon_installed "$__resolve_addon_addon_id"; then
+    while read -r __resolve_addon_dependency; do
+      if [ -n "$__resolve_addon_dependency" ]; then
+        (resolve_addon "$__resolve_addon_dependency") || __resolve_addon_rc="$?"
       else
-        printf 1>&2 -- 'Could not find addon %s in %s addon data\n' "$addon_id" "$addon_id"
+        printf 1>&2 -- 'Could not find addon %s in %s addon data\n' "$__resolve_addon_addon_id" "$__resolve_addon_addon_id"
       fi
     done <<ADDON_DATA
-$(addon_data "$addon_id" | addon_imports_singleton 2>/dev/null)
+$(addon_data "$__resolve_addon_addon_id" | addon_imports_singleton 2>/dev/null)
 ADDON_DATA
   fi
 
-  return "$rc"
+  return "$__resolve_addon_rc"
 }
 
 yield_addons() {
@@ -358,48 +367,48 @@ enable_addon() {
     return 1
   fi
 
-  addon_id="$1"
+  __enable_addon_addon_id="$1"
   shift
 
-  kodi_version="$1"
+  __enable_addon_kodi_version="${1:-${kodi_version?}}"
   shift
 
-  if [ -z "$addon_id" ] || [ -z "$kodi_version" ]; then
+  if [ -z "$__enable_addon_addon_id" ] || [ -z "$__enable_addon_kodi_version" ]; then
     printf 1>&2 -- 'Error: addon ID and Kodi version cannot be empty.\n'
     enable_addon_usage
     return 1
   fi
 
-  for db in "${KODI_DATA_DIR}/userdata/Database/Addons"*.db; do
-    if [ -f "$db" ]; then
+  for __enable_addon_db in "${KODI_DATA_DIR}/userdata/Database/Addons"*.db; do
+    if [ -f "$__enable_addon_db" ]; then
       break
     else
-      unset db
+      unset __enable_addon_db
     fi
   done
 
-  if [ -z "${db:-}" ]; then
-    case "${kodi_version%%.*}" in
+  if [ -z "${__enable_addon_db:-}" ]; then
+    case "${__enable_addon_kodi_version%%.*}" in
       16)
-          db="${KODI_DATA_DIR?}/userdata/Database/Addons20.db"
+          __enable_addon_db="${KODI_DATA_DIR?}/userdata/Database/Addons20.db"
           ;;
       17 | 18 | 19)
-          db="${KODI_DATA_DIR?}/userdata/Database/Addons27.db"
+          __enable_addon_db="${KODI_DATA_DIR?}/userdata/Database/Addons27.db"
           ;;
       20)
-          db="${KODI_DATA_DIR?}/userdata/Database/Addons33.db"
+          __enable_addon_db="${KODI_DATA_DIR?}/userdata/Database/Addons33.db"
           ;;
       *)
-          printf 1>&2 -- 'enable_addon: unsupported Kodi version: %s\n' "$kodi_version"
+          printf 1>&2 -- 'enable_addon: unsupported Kodi version: %s\n' "$__enable_addon_kodi_version"
           return 1
           ;;
     esac
   fi
 
   # init empty db
-  if ! [ -f "$db" ]; then
-    mkdir -p "${db%/*}"
-    sqlite3 "$db" <<"HERE"
+  if ! [ -f "$__enable_addon_db" ]; then
+    mkdir -p "${__enable_addon_db%/*}"
+    sqlite3 "$__enable_addon_db" <<"HERE"
 CREATE TABLE version (idVersion integer, iCompressCount integer);
 CREATE TABLE repo (id integer primary key, addonID text,checksum text, lastcheck text, version text);
 CREATE TABLE addonlinkrepo (idRepo integer, idAddon integer);
@@ -421,12 +430,12 @@ INSERT INTO version (idVersion, iCompressCount) VALUES (27, 0);
 HERE
   fi
 
-  if ! sqlite3 "$db" 'SELECT * from installed where addonID="'"$addon_id"'"' | grep -Fq "$addon_id"; then
-    printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$addon_id"
-    sqlite3 "$db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$addon_id"'", 1, "1970-01-01 00:00:01");'
+  if ! sqlite3 "$__enable_addon_db" 'SELECT * from installed where addonID="'"$__enable_addon_addon_id"'"' | grep -Fq "$__enable_addon_addon_id"; then
+    printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$__enable_addon_addon_id"
+    sqlite3 "$__enable_addon_db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$__enable_addon_addon_id"'", 1, "1970-01-01 00:00:01");'
   else
-    printf 1>&2 -- 'Making sure %s is enabled...\n' "$addon_id"
-    sqlite3 "$db" 'UPDATE installed SET enabled=1 WHERE addonId="'"$addon_id"'"'
+    printf 1>&2 -- 'Making sure %s is enabled...\n' "$__enable_addon_addon_id"
+    sqlite3 "$__enable_addon_db" 'UPDATE installed SET enabled=1 WHERE addonId="'"$__enable_addon_addon_id"'"'
   fi
 }
 
