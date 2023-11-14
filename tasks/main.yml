@@ -194,16 +194,14 @@
   with_items: "{{ stat_result.results | selectattr('stat.exists', 'false') | map(attribute='item') | list }}"
   tags: configure
 
-- include: configure.yml
-  when: "ansible_distribution != 'LibreELEC'"
-
-- include: configure_libreelec.yml
-  when: "ansible_distribution == 'LibreELEC'"
-
-- name: Show message to LibreELEC users
-  debug:
-    msg: "Update addons Kodi inside Kodi"
-  when: "ansible_distribution == 'LibreELEC'"
+- block:
+  - name: "Test if Ansible 'xml' module prerequisites are available"
+    command: "{{ ansible_python.executable | default(ansible_python_interpreter) | quote }} -c 'import lxml'"
+    changed_when: False
+    tags: configure
+  - include: configure.yml
+  rescue:
+  - include: configure_libreelec.yml
 
 - name: Apply correct ownership to Kodi data directory
   file:
