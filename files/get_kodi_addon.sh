@@ -143,7 +143,7 @@ for res in root.findall(sys.argv[1]):
     python_xpath './/requires/import' addon
   }
 else
-  printf -- '%s: XML parsing prerequisites are missing (have neither xmllint nor python); cannot proceed.\n' "${0##*/}"
+  printf -- '%s: XML parsing prerequisites are missing (xmllint, xmlstarlet, and python are all unavailable); cannot proceed.\n' "${0##*/}"
   exit 127
 fi
 
