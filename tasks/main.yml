@@ -8,7 +8,11 @@
 
 # tasks file for kodi-ansible-role
 - name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
+  include_vars: "{{ item }}"
+  with_first_found:
+  - files:
+    - "{{ ansible_os_family }}.yml"
+    - "fallback.yml"
   tags:
   - install
   - configure
