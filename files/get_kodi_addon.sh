@@ -432,12 +432,23 @@ HERE
   fi
 
   if ! sqlite3 "$__enable_addon_db" 'SELECT * from installed where addonID="'"$__enable_addon_addon_id"'"' | grep -Fq "$__enable_addon_addon_id"; then
-    printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$__enable_addon_addon_id"
-    sqlite3 "$__enable_addon_db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$__enable_addon_addon_id"'", 1, "1970-01-01 00:00:01");'
+    if [ -n "${ENABLE_ADDON_STRICT:-}" ]; then
+      printf 1>&2 -- 'Addon %s is not currently installed...\n' "$__enable_addon_addon_id"
+      return 1
+    else
+      printf 1>&2 -- 'Adding %s to list of installed addons and enabling it...\n' "$__enable_addon_addon_id"
+      sqlite3 "$__enable_addon_db" 'INSERT INTO installed (addonId, enabled, installDate) VALUES ("'"$__enable_addon_addon_id"'", 1, "1970-01-01 00:00:01");'
+    fi
   else
     printf 1>&2 -- 'Making sure %s is enabled...\n' "$__enable_addon_addon_id"
     sqlite3 "$__enable_addon_db" 'UPDATE installed SET enabled=1 WHERE addonId="'"$__enable_addon_addon_id"'"'
   fi
+}
+
+# Like `enable_addon`, but fails if the addon is not currently in the
+# `installed` table.
+enable_addon_strict() {
+  ENABLE_ADDON_STRICT=yes enable_addon "$@"
 }
 
 set -eu
@@ -498,6 +509,6 @@ RESOLVE_ADDON
 
 if [ "$found_addons" -eq 0 ]; then
   printf 1>&2 -- 'No such addon (%s) found (or already installed)\n' "$target_addon_id"
-  enable_addon "$target_addon_id" "$kodi_version" || exit
+  enable_addon_strict "$target_addon_id" "$kodi_version" || exit
   printf 1>&2 -- 'Looks like addon %s is a core addon\n' "$target_addon_id"
 fi
