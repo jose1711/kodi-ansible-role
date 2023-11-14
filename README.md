@@ -81,7 +81,7 @@ Role Variables
 - `kodi_shell`: if `kodi_user` is created by this role, it will use this value as its login shell.  Default: `"/bin/bash"`.
 - `kodi_user_create`: whether to create the user account specified in `kodi_user`.  Default: `True` (except on LibreELEC and OSMC, where it is set to `False`).
 - `kodi_master_installation`: the name of Ansible inventory host whose `favourites.xml` and RSS feeds will be made available for copying to other inventory hosts.  Default: `"master_install"`.
-- `kodi_master_kodi_user`: the Kodi user on the `kodi_master_installation` host.  Default: `"kodi_user"`.
+- `kodi_master_kodi_user`: the Kodi user on the `kodi_master_installation` host.  Default: the value of `kodi_user`.
 - `kodi_copy_favourites`: copy `favourites.xml` from the `kodi_master_installation` host to the target host.  Default: `False`.
 - `kodi_copy_feeds`: copy RSS feeds from the `kodi_master_installation` host to the target host.  Default: `False`.
 - `kodi_repositories`: a list of strings of the form `<repository-name>=<repository-url>`, where `repository-name` is an arbitrary identifier and `repository-url` is the URL to a Kodi repository `addons.xml` file.  Default: `[]`.

@@ -20,7 +20,7 @@ kodi_addons: []
 kodi_copy_favourites: False
 kodi_copy_feeds: False
 kodi_master_installation: master_install
-kodi_master_kodi_user: kodi_user
+kodi_master_kodi_user: '{{ kodi_user }}'
 
 # Whether to include the configuration from `vars/default.yml`
 kodi_include_default_config: False
