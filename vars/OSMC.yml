@@ -8,3 +8,6 @@ kodi_user: osmc
 kodi_user_create: False
 
 kodi_systemd_service: mediacenter
+
+kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'"
+kodi_check_process_executable: "/bin/bash"

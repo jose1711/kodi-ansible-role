@@ -3,3 +3,6 @@ packages: []
 kodi_user_create: False
 
 kodi_systemd_service: kodi
+
+kodi_check_process_cmd: "ps ux | grep -wq [k]odi.bin"
+kodi_check_process_executable: "/usr/bin/sh"

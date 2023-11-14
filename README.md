@@ -106,6 +106,8 @@ Role Variables
 - `kodi_weather_provider`: Hostname of the weather data provider.  Default: not defined.
 - `kodi_include_default_config`: a boolean indicating whether or not to include the variable definitions from [`vars/default.yml`][].yml).  Default: `False`.
 - `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined, except on LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.
+- `kodi_check_process_cmd`: the command to use for checking whether Kodi is currently running (Kodi must be shut off before changing its configuration).  See [the platform-specific variables files](/vars) for the values of this variable.
+- `kodi_check_process_executable`: the executable to use for running `kodi_check_process_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
 
 Installing Addons
 -----------------

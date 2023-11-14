@@ -6,3 +6,6 @@ packages:
   - unzip
   - python-lxml
   - acl
+
+kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep -e '^/usr/lib/.*kodi.bin' -e '^/usr/lib/.*kodi-rbpi'"
+kodi_check_process_executable: "/bin/bash"

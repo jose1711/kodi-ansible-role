@@ -5,3 +5,6 @@ packages:
   - libxml2-utils
   - unzip
   - python-lxml
+
+kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'"
+kodi_check_process_executable: "/bin/bash"

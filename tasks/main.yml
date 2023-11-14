@@ -32,23 +32,6 @@
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- name: Check if Kodi is running
-  shell:
-    cmd: "{{ check_kodi_process[ansible_os_family].cmd }}"
-    executable: "{{ check_kodi_process[ansible_os_family].executable }}"
-  register: kodi_running
-  ignore_errors: True
-  vars:
-    check_kodi_process:
-      'Debian': {cmd: "ps -U {{ kodi_user }} -o command | grep -e '^/usr/lib/.*kodi.bin' -e '^/usr/lib/.*kodi-rbpi'", executable: "/bin/bash"}
-      'Ubuntu': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
-      'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
-      'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
-      'OSMC': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
-  tags:
-  - configure
-  check_mode: no
-
 - name: Stop Kodi via service
   systemd:
     name: "{{ kodi_systemd_service }}"
@@ -57,13 +40,33 @@
   tags:
   - configure
 
+- when: "kodi_systemd_service is not defined"
+  block:
+  - name: Ensure that Kodi process-checking variables are defined
+    assert:
+      that:
+      - "kodi_check_process_cmd is defined"
+      - "kodi_check_process_executable is defined"
+      msg: "Please define the variables 'kodi_check_process_cmd' and 'kodi_check_process_executable'."
+    tags:
+    - configure
 
-- name: Stop Kodi
-  fail:
-    msg: "Stop Kodi prior to executing this playbook"
-  when: "kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
-  tags:
-  - configure
+  - name: Check if Kodi is running
+    shell:
+      cmd: "{{ kodi_check_process_cmd | mandatory }}"
+      executable: "{{ kodi_check_process_executable | mandatory }}"
+    register: kodi_running
+    ignore_errors: True
+    tags:
+    - configure
+    check_mode: no
+
+  - name: Stop Kodi
+    fail:
+      msg: "Stop Kodi prior to executing this playbook"
+    when: "(kodi_running.rc | default(0)) == 0"
+    tags:
+    - configure
 
 # Setup apt repo (Ubuntu only)"
 - name: Add Kodi ppa
