@@ -45,21 +45,14 @@
   - configure
   check_mode: no
 
-- name: Stop Kodi via service (LibreELEC)
+- name: Stop Kodi via service
   systemd:
-    name: kodi
+    name: "{{ kodi_systemd_service }}"
     state: stopped
-  when: "kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'"
+  when: "kodi_systemd_service is defined"
   tags:
   - configure
 
-- name: Stop Kodi via service (OSMC)
-  systemd:
-    name: mediacenter
-    state: stopped
-  when: "kodi_running.rc == 0 and ansible_distribution == 'OSMC'"
-  tags:
-  - configure
 
 - name: Stop Kodi
   fail:
@@ -244,18 +237,10 @@
   when: kodi_copy_feeds
   tags: transfer_feeds
 
-- name: Start Kodi via service (LibreELEC)
+- name: Start Kodi via service
   systemd:
-    name: kodi
+    name: "{{ kodi_systemd_service }}"
     state: started
-  when: "ansible_distribution == 'LibreELEC'"
-  tags:
-  - configure
-
-- name: Start Kodi via service (OSMC)
-  systemd:
-    name: mediacenter
-    state: started
-  when: "ansible_distribution == 'OSMC'"
+  when: "kodi_systemd_service is defined"
   tags:
   - configure

@@ -6,3 +6,5 @@ packages:
 
 kodi_user: osmc
 kodi_user_create: False
+
+kodi_systemd_service: mediacenter

@@ -105,6 +105,7 @@ Role Variables
 - `kodi_subtitles_languages`: Comma-separated list of subtitle languages.  Default: not defined.
 - `kodi_weather_provider`: Hostname of the weather data provider.  Default: not defined.
 - `kodi_include_default_config`: a boolean indicating whether or not to include the variable definitions from [`vars/default.yml`][].yml).  Default: `False`.
+- `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined, except on LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.
 
 Installing Addons
 -----------------
