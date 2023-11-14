@@ -125,6 +125,9 @@
   become_user: "{{ kodi_user }}"
   become: True
   environment:
+    # Pass through the Python interpreter value in order to use this Python as
+    # a fallback for powering the XML munging in `get_kodi_addon.sh`.
+    ANSIBLE_PYTHON_INTERPRETER: "{{ ansible_python.executable | default(ansible_python_interpreter) }}"
     REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
     ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
     KODI_USER: "{{ kodi_user }}"

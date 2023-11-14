@@ -31,9 +31,9 @@ PWENT
 
     printf -- '%s' "$home"
   }
-elif command -v python 1>/dev/null 2>&1; then
+elif python_interpreter="$(command -v "${ANSIBLE_PYTHON_INTERPRETER:-python}" 2>/dev/null)"; then
   home_of_user() {
-    python -c '
+    "${python_interpreter:-python}" -c '
 import pwd
 import sys
 
@@ -42,9 +42,9 @@ sys.stdout.write(pwd.getpwuid(sys.argv[1]).pw_dir)
   }
 fi
 
-if command -v python 1>/dev/null 2>&1; then
+if python_interpreter="${python_interpreter:-$(command -v "${ANSIBLE_PYTHON_INTERPRETER:-python}" 2>/dev/null)}"; then
   expand_user() {
-    python -c '
+    "${python_interpreter:-python}" -c '
 import os.path
 import sys
 
@@ -108,9 +108,9 @@ elif command -v xmlstarlet 1>/dev/null 2>&1; then
   addon_imports_singleton() {
     xmlstarlet_select_value '//requires/import/@addon' 2>/dev/null
   }
-elif command -v python 1>/dev/null 2>&1; then
+elif python_interpreter="${python_interpreter:-$(command -v "${ANSIBLE_PYTHON_INTERPRETER:-python}" 2>/dev/null)}"; then
   python_xpath() {
-    python -c '
+    "${python_interpreter:-python}" -c '
 import os
 import sys
 
