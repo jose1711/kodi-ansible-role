@@ -453,6 +453,13 @@ enable_addon_strict() {
 
 set -eu
 
+# Try to enable Bash's `pipefail` mode (pipeline exits with the status
+# of the first command to exit with non-zero status, else exits with zero).
+# shellcheck disable=SC3040
+if (set -o pipefail) 2>/dev/null; then
+  set -o pipefail
+fi
+
 if [ "$#" -ne 2 ]; then
   usage
   exit 1
