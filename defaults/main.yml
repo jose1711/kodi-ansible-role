@@ -4,6 +4,10 @@ kodi_user: kodi
 kodi_groups: [audio, video, input]
 kodi_shell: /bin/bash
 
+# Whether to create the kodi user account.  Overridden to `False` on LibreELEC
+# and OSMC.
+kodi_user_create: True
+
 kodi_repositories: []
 
 # Enable all repositories in `kodi_repositories`

@@ -24,7 +24,7 @@
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
     append: True
-  when: "ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
+  when: 'kodi_user_create | default(True) | bool'
   tags:
   - configure
   - get_addons

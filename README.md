@@ -79,6 +79,7 @@ Role Variables
 - `kodi_user`: the user account used for running the Kodi service on the target machine.  Default: `"kodi"`.
 - `kodi_groups`: if `kodi_user` is created by this role, it will be added to these groups.  Default: `["audio", "video", "input"]`.
 - `kodi_shell`: if `kodi_user` is created by this role, it will use this value as its login shell.  Default: `"/bin/bash"`.
+- `kodi_user_create`: whether to create the user account specified in `kodi_user`.  Default: `True` (except on LibreELEC and OSMC, where it is set to `False`).
 - `kodi_master_installation`: the name of Ansible inventory host whose `favourites.xml` and RSS feeds will be made available for copying to other inventory hosts.  Default: `"master_install"`.
 - `kodi_master_kodi_user`: the Kodi user on the `kodi_master_installation` host.  Default: `"kodi_user"`.
 - `kodi_copy_favourites`: copy `favourites.xml` from the `kodi_master_installation` host to the target host.  Default: `False`.

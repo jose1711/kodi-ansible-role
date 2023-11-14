@@ -3,3 +3,5 @@ packages:
   - python3-lxml
   - sqlite3
   - file
+
+kodi_user_create: False
