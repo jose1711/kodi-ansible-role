@@ -8,6 +8,8 @@ kodi_shell: /bin/bash
 # and OSMC.
 kodi_user_create: True
 
+kodi_data_dir: '~{{ kodi_user }}/.kodi'
+
 kodi_repositories: []
 
 # Enable all repositories in `kodi_repositories`
@@ -21,6 +23,10 @@ kodi_copy_favourites: False
 kodi_copy_feeds: False
 kodi_master_installation: master_install
 kodi_master_kodi_user: '{{ kodi_user }}'
+kodi_master_data_dir: '~{{ kodi_master_kodi_user }}/.kodi'
 
 # Whether to include the configuration from `vars/default.yml`
 kodi_include_default_config: False
+
+kodi_check_process_executable: "{{ mandatory }}"
+kodi_query_version_executable: "{{ kodi_check_process_executable }}"

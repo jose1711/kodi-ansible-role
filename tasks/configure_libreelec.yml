@@ -1,5 +1,8 @@
 - name: Update XML
   script:
     cmd: "update_xml.py {{ item.file | quote }} {{ item.key | quote }} {{ item.value | quote }} {{ item.type | quote }}"
+  environment:
+    KODI_USER: "{{ kodi_user | mandatory }}"
+    KODI_DATA_DIR: "{{ kodi_data_dir | mandatory }}"
   with_items: "{{ kodi_config_final }}"
   tags: configure

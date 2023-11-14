@@ -3,7 +3,8 @@
 from xml.etree import ElementTree as et
 from xml.etree.ElementTree import SubElement as SubE
 import re
-import os.path
+import os
+import pwd
 import sys
 
 if len(sys.argv) != 5:
@@ -14,7 +15,9 @@ filename, path, value, datatype = sys.argv[1:]
 
 print('Path: **{0}**, value: **{1}**'.format(path, value))
 
-filename = os.path.join('/storage/.kodi', filename)
+kodi_user = os.environ.get('KODI_USER', pwd.getpwuid(os.geteuid()).pw_name)
+data_dir = os.path.expanduser(os.environ.get('KODI_DATA_DIR', '~{0}/.kodi'.format(kodi_user)))
+filename = os.path.join(data_dir, filename)
 
 tree = et.parse(filename)
 root = tree.getroot()

@@ -17,6 +17,47 @@ _curl() {
   curl --user-agent "Kodi${kodi_version:+/${kodi_version}}" "$@"
 }
 
+if command -v homeof 1>/dev/null 2>&1; then
+  home_of_user() {
+    homeof "${1?}"
+  }
+elif command -v getent 1>/dev/null 2>&1; then
+  home_of_user() {
+    pwent="$(getend passwd "${1?}")" || return
+
+    IFS=: read -r _ _ _ _ _ home _ <<PWENT
+${pwent}
+PWENT
+
+    printf -- '%s' "$home"
+  }
+elif command -v python 1>/dev/null 2>&1; then
+  home_of_user() {
+    python -c '
+import pwd
+import sys
+
+sys.stdout.write(pwd.getpwuid(sys.argv[1]).pw_dir)
+' "${1?}"
+  }
+fi
+
+if command -v python 1>/dev/null 2>&1; then
+  expand_user() {
+    python -c '
+import os.path
+import sys
+
+sys.stdout.write(os.path.expanduser(sys.argv[1]))
+' "${1?}"
+  }
+else
+  # XXX unsafe!
+  expand_user() {
+    /bin/sh -c "printf -- '%s' ${1?}"
+  }
+fi
+
 if command -v xmllint 1>/dev/null 2>&1; then
   xmllint_filter_attr_values() {
     while read -r attrdef; do
@@ -107,11 +148,11 @@ else
 fi
 
 addon_data() {
-  cat ~/.kodi/addons/"${1?}"/addon.xml
+  cat "${KODI_DATA_DIR?}/addons/${1?}/addon.xml"
 }
 
 addon_installed() {
-  [ -d ~/.kodi/addons/"${1?}" ]
+  [ -d "${KODI_DATA_DIR?}/addons/${1?}" ]
 }
 
 addon_version() {
@@ -185,7 +226,7 @@ fetch_zip() {
 }
 
 install_zip() {
-  unzip -q -o -d ~/.kodi/addons "${1?}"
+  unzip -q -o -d "${KODI_DATA_DIR?}/addons" "${1?}"
 }
 
 resolve_addon() {
@@ -329,7 +370,7 @@ enable_addon() {
     return 1
   fi
 
-  for db in ~/.kodi/userdata/Database/Addons*.db; do
+  for db in "${KODI_DATA_DIR}/userdata/Database/Addons"*.db; do
     if [ -f "$db" ]; then
       break
     else
@@ -340,17 +381,17 @@ enable_addon() {
   if [ -z "${db:-}" ]; then
     case "${kodi_version%%.*}" in
       16)
-          db=~/.kodi/userdata/Database/Addons20.db
+          db="${KODI_DATA_DIR?}/userdata/Database/Addons20.db"
           ;;
       17 | 18 | 19)
-                db=~/.kodi/userdata/Database/Addons27.db
+          db="${KODI_DATA_DIR?}/userdata/Database/Addons27.db"
           ;;
       20)
-          db=~/.kodi/userdata/Database/Addons33.db
+          db="${KODI_DATA_DIR?}/userdata/Database/Addons33.db"
           ;;
       *)
-        printf 1>&2 -- 'enable_addon: unsupported Kodi version: %s\n' "$kodi_version"
-        return 1
+          printf 1>&2 -- 'enable_addon: unsupported Kodi version: %s\n' "$kodi_version"
+          return 1
           ;;
     esac
   fi
@@ -401,6 +442,23 @@ shift
 
 kodi_version="$1"
 shift
+
+if ! KODI_USER="${KODI_USER:-$(id -u 2>/dev/null)}" || [ -z "${KODI_USER:-}" ]; then
+  KODI_USER=kodi
+fi
+
+if [ -z "${KODI_DATA_DIR:-}" ]; then
+  if KODI_HOME="$(home_of_user "$KODI_USER" 2>/dev/null)" && [ -n "$KODI_HOME" ]; then
+    KODI_DATA_DIR="${KODI_HOME}/.kodi"
+  else
+    KODI_DATA_DIR=~/.kodi
+  fi
+fi
+
+# KODI_DATA_DIR may contain an unexpanded tilde.
+if data_dir="$(expand_user "$KODI_DATA_DIR")" && [ -n "$data_dir" ]; then
+  KODI_DATA_DIR="$data_dir"
+fi
 
 cache_repositories
 

@@ -117,7 +117,7 @@
 - name: Create Kodi dirs
   file:
     state: directory
-    path: "~{{ kodi_user }}/.kodi/addons/"
+    path: "{{ kodi_data_dir }}/addons/"
     owner: "{{ kodi_user }}"
   tags:
   - configure
@@ -132,12 +132,14 @@
   environment:
     REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
     ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
+    KODI_USER: "{{ kodi_user }}"
+    KODI_DATA_DIR: "{{ kodi_data_dir }}"
   tags:
   - get_addons
 
-- name: Set permissions on .kodi/
+- name: Set permissions on Kodi data directory
   file:
-    path: "~{{ kodi_user }}/.kodi"
+    path: "{{ kodi_data_dir }}"
     owner: "{{ kodi_user }}"
   tags:
   - configure
@@ -151,7 +153,7 @@
 - name: Copy Kodi repository addons
   copy:
     src: "{{ item }}"
-    dest: "~{{ kodi_user }}/.kodi/addons"
+    dest: "{{ kodi_data_dir }}/addons"
     owner: "{{ kodi_user }}"
   tags:
   - get_addons
@@ -165,7 +167,7 @@
 - name: Copy addon settings
   copy:
     src: "{{ item }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
+    dest: "{{ kodi_data_dir }}/userdata/addon_data"
     owner: "{{ kodi_user }}"
   with_items: "{{ kodi_addon_settings_upload | default([]) }}"
   tags:
@@ -173,14 +175,14 @@
 
 - name: Create directories for xml files
   file:
-    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+    path: "{{ kodi_data_dir }}/{{ item }}"
     state: directory
   with_items: "{{ kodi_config_final | map(attribute='file') | map('dirname') | unique }}"
   tags: configure
 
 - name: Check if xml config files exist
   stat:
-    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+    path: "{{ kodi_data_dir }}/{{ item }}"
   with_items: "{{ kodi_config_final | map(attribute='file') | unique }}"
   tags: configure
   register: stat_result
@@ -188,11 +190,8 @@
 - name: Create empty xml setting file if needed
   copy:
     content: "<settings></settings>"
-    dest: "~{{ kodi_user }}/.kodi/{{ item }}"
-  with_items: "{{ stat_result.results
-                  | selectattr('stat.exists', 'false')
-                  | map(attribute='item')
-                  | list }}"
+    dest: "{{ kodi_data_dir }}/{{ item }}"
+  with_items: "{{ stat_result.results | selectattr('stat.exists', 'false') | map(attribute='item') | list }}"
   tags: configure
 
 - include: configure.yml
@@ -206,9 +205,9 @@
     msg: "Update addons Kodi inside Kodi"
   when: "ansible_distribution == 'LibreELEC'"
 
-- name: Apply correct ownership to ~/.kodi
+- name: Apply correct ownership to Kodi data directory
   file:
-    path: "~{{ kodi_user }}/.kodi"
+    path: "{{ kodi_data_dir }}"
     state: directory
     recurse: True
     owner: "{{ kodi_user }}"
@@ -219,7 +218,7 @@
 
 - name: Slurp favourites from master installation
   slurp:
-    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/favourites.xml"
+    src: "{{ kodi_master_kodi_data_dir }}/userdata/favourites.xml"
   register: favourites
   delegate_to: "{{ kodi_master_installation }}"
   when: kodi_copy_favourites
@@ -227,7 +226,7 @@
 
 - name: Slurp RSS feeds from master installation
   slurp:
-    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/RssFeeds.xml"
+    src: "{{ kodi_master_kodi_data_dir }}/userdata/RssFeeds.xml"
   register: rssfeeds
   delegate_to: "{{ kodi_master_installation }}"
   when: kodi_copy_feeds
@@ -236,7 +235,7 @@
 - name: Transfer favourites from master installation
   copy:
     content: "{{ favourites['content'] | b64decode }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
+    dest: "{{ kodi_data_dir }}/userdata/favourites.xml"
     backup: True
   when: kodi_copy_favourites
   tags: transfer_favourites
@@ -244,7 +243,7 @@
 - name: Transfer RSS feeds from master installation
   copy:
     content: "{{ favourites['content'] | b64decode }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
+    dest: "{{ kodi_data_dir }}/userdata/RSSFeeds.xml"
     backup: True
   when: kodi_copy_feeds
   tags: transfer_feeds
