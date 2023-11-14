@@ -214,7 +214,7 @@
     src: "{{ kodi_master_kodi_data_dir }}/userdata/favourites.xml"
   register: favourites
   delegate_to: "{{ kodi_master_installation }}"
-  when: kodi_copy_favourites
+  when: 'kodi_copy_favourites | default(False) | bool'
   tags: transfer_favourites
 
 - name: Slurp RSS feeds from master installation
@@ -222,7 +222,7 @@
     src: "{{ kodi_master_kodi_data_dir }}/userdata/RssFeeds.xml"
   register: rssfeeds
   delegate_to: "{{ kodi_master_installation }}"
-  when: kodi_copy_feeds
+  when: 'kodi_copy_feeds | default(False) | bool'
   tags: transfer_feeds
 
 - name: Transfer favourites from master installation
@@ -230,7 +230,7 @@
     content: "{{ favourites['content'] | b64decode }}"
     dest: "{{ kodi_data_dir }}/userdata/favourites.xml"
     backup: True
-  when: kodi_copy_favourites
+  when: 'kodi_copy_favourites | default(False) | bool'
   tags: transfer_favourites
 
 - name: Transfer RSS feeds from master installation
@@ -238,7 +238,7 @@
     content: "{{ favourites['content'] | b64decode }}"
     dest: "{{ kodi_data_dir }}/userdata/RSSFeeds.xml"
     backup: True
-  when: kodi_copy_feeds
+  when: 'kodi_copy_feeds | default(True) | bool'
   tags: transfer_feeds
 
 - name: Start Kodi via service
