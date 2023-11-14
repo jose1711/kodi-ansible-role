@@ -284,6 +284,7 @@ resolve_addon() {
 
       if ! __search_addon_version="$(repo_data "$__search_addon_repo" | addon_version "$__search_addon_addon_id")" || [ -z "$__search_addon_version" ]; then
         printf 1>&2 -- 'Unable to find addon %s in %s repository\n' "$__search_addon_addon_id" "$__search_addon_repo"
+        return 1
       fi
 
       __search_addon_datadir_count=0
