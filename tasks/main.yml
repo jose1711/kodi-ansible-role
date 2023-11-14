@@ -118,7 +118,7 @@
 - name: Get Kodi addons
   script:
     cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
-  with_items: "{{ kodi_addon_names }}"
+  with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
   become: True
   environment:

@@ -237,19 +237,12 @@ resolve_addon() {
   __resolve_addon_addon_id="${1?}"
   shift
 
-  case "$__resolve_addon_addon_id" in
-    '')
-      echo 1>&2 'Error: "" is not a valid addon ID'
-      return 1
-      ;;
-    *=*)
-      __resolve_addon_url="${__resolve_addon_addon_id#*=}"
-      __resolve_addon_addon_id="${__resolve_addon_addon_id%%=*}"
-      ;;
-    *)
-      unset __resolve_addon_url
-      ;;
-  esac
+  __resolve_addon_url="${1:-}"
+
+  if [ -z "$__resolve_addon_addon_id" ]; then
+    echo 1>&2 'Error: "" is not a valid addon ID'
+    return 1
+  fi
 
   # no need to resolve this core dependency
   if [ "$__resolve_addon_addon_id" = xbmc.python ]; then
@@ -471,6 +464,13 @@ shift
 kodi_version="$1"
 shift
 
+case "$target_addon_id" in
+  *=*)
+    target_url="${target_addon_id#*=}"
+    target_addon_id="${target_addon_id%%=*}"
+    ;;
+esac
+
 if ! KODI_USER="${KODI_USER:-$(id -u 2>/dev/null)}" || [ -z "${KODI_USER:-}" ]; then
   KODI_USER=kodi
 fi
@@ -511,7 +511,7 @@ while read -r addon_id path use; do
 
   enable_addon "$addon_id" "$kodi_version"
 done <<RESOLVE_ADDON
-$(yield_addons "$target_addon_id")
+$(yield_addons "$target_addon_id" "${target_url:-}")
 RESOLVE_ADDON
 
 if [ "$found_addons" -eq 0 ]; then
