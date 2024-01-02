@@ -187,8 +187,10 @@ cache_repositories() {
         || mv -f "$__cache_repositories_fetch_path" "$__cache_repositories_data_path"
     } || {
       __cache_repositories_rc="$?"
-      rm -f "$__cache_repositories_fetch_path" "$__cache_repositories_data_path"
+      rm -f "$__cache_repositories_data_path"
     }
+
+    rm -f "$__cache_repositories_fetch_path"
   done
 
   return "${__cache_repositories_rc:-0}"
