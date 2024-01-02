@@ -232,18 +232,18 @@
 
 - name: Get Kodi addons
   script:
-    cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
-  with_items: "{{ kodi_addons }}"
+    cmd: "get_kodi_addon.py --kodi-version {{ kodi_version | quote }} install {{ kodi_addons | map('quote') | join(' ') }}"
+    # Use a known python interpreter rather than relying on (say) `/usr/bin/env python`.
+    executable: "{{ ansible_python.executable | default(ansible_python_interpreter) }}"
   become_user: "{{ kodi_user }}"
   become: True
   environment:
-    # Pass through the Python interpreter value in order to use this Python as
-    # a fallback for powering the XML munging in `get_kodi_addon.sh`.
-    ANSIBLE_PYTHON_INTERPRETER: "{{ ansible_python.executable | default(ansible_python_interpreter) }}"
     REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
     ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
     KODI_USER: "{{ kodi_user }}"
     KODI_DATA_DIR: "{{ kodi_data_dir }}"
+    KODI_SEND_HOST: "{{ kodi_send_host }}"
+    KODI_SEND_PORT: "{{ kodi_send_port }}"
   tags:
   - get_addons
 
