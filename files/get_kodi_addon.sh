@@ -218,16 +218,32 @@ path_for_zip_url() {
   printf -- '%s/%s' "${TMPDIR:-/tmp}" "$(printf -- '%s' "${1?}" | sed -e 's/[^[:alnum:]_.]/-/g')"
 }
 
-fetch_zip() {
-  if ! _curl -Lo "${2?}" "${1?}"; then
+fetch_zip_atomic() {
+  __fetch_zip_dirname="$(dirname "${2?}")"
+  __fetch_zip_basename="$(basename "$2")"
+
+  __fetch_zip_tmp="$(mktemp "${__fetch_zip_dirname}/.${__fetch_zip_basename}.XXXXXXXX")" || return
+
+  if ! _curl -Lo "$__fetch_zip_tmp" "${1?}"; then
     printf 1>&2 -- 'Unable to fetch "%s" from "%s"\n' "$2" "$1"
+    rm -f "$__fetch_zip_tmp"
     return 1
   fi
 
-  if ! unzip -lq "$2" >/dev/null 2>&1; then
+  if ! unzip -lq "$__fetch_zip_tmp" >/dev/null 2>&1; then
     printf 1>&2 -- '"%s" from "%s" does not look like a zip archive\n' "$2" "$1"
-    rm -f "$2"
+    rm -f "$__fetch_zip_tmp"
     return 1
+  fi
+
+  mv -f "$__fetch_zip_tmp" "$2"
+}
+
+fetch_zip() {
+  if [ -f "${2?}" ]; then
+    return
+  else
+    fetch_zip_atomic "$@"
   fi
 }
 
