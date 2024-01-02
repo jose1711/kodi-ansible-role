@@ -426,8 +426,8 @@ enable_addon() {
 
   # init empty db
   if ! [ -f "$__enable_addon_db" ]; then
-    mkdir -p "${__enable_addon_db%/*}"
-    sqlite3 "$__enable_addon_db" <<"HERE"
+    mkdir -p "${__enable_addon_db%/*}" || return
+    { sqlite3 "$__enable_addon_db" || return ; } <<"HERE"
 CREATE TABLE version (idVersion integer, iCompressCount integer);
 CREATE TABLE repo (id integer primary key, addonID text,checksum text, lastcheck text, version text);
 CREATE TABLE addonlinkrepo (idRepo integer, idAddon integer);
