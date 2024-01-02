@@ -3,8 +3,7 @@
   include_vars: "default.yml"
   when: 'kodi_include_default_config | default(False) | bool'
   tags:
-  - install
-  - configure
+  - always
 
 # tasks file for kodi-ansible-role
 - name: Include OS-specific variables.
@@ -14,8 +13,7 @@
     - "{{ ansible_os_family }}.yml"
     - "fallback.yml"
   tags:
-  - install
-  - configure
+  - always
 
 - name: Create Kodi user
   user:
