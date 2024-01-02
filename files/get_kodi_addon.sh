@@ -371,6 +371,8 @@ ADDON_DATA
 }
 
 yield_addons() {
+  # `resolve_addon` sends `(version, addon_id, url)`; we sort by version and
+  # then return `(addon_id, url, use_this_addon)`.
   resolve_addon "$@" | sort -Vrk 2,1 | awk '!a[$2]++{print $2,$3,1; exit} {print $2,$3,0}'
 }
 
