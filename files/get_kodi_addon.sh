@@ -282,6 +282,7 @@ resolve_addon() {
 
     # output addon download info
     if fetch_zip "$__resolve_addon_url" "$__resolve_addon_path" && install_zip "$__resolve_addon_path" && enable_addon "$__resolve_addon_addon_id" "${kodi_version?}"; then
+      printf 1>&2 -- 'Installed addon %s from %s...\n' "$__resolve_addon_addon_id" "$__resolve_addon_url"
       echo "0 ${__resolve_addon_addon_id} -"
     fi
   else
@@ -311,6 +312,7 @@ resolve_addon() {
         __search_addon_path="$(path_for_zip_url "$__search_addon_url")"
 
         if fetch_zip "$__search_addon_url" "$__search_addon_path"; then
+          printf 1>&2 -- 'Fetched addon from %s to %s...\n' "$__search_addon_url" "$__search_addon_path"
           echo "${__search_addon_version} ${__search_addon_addon_id} ${__search_addon_path}"
         fi
       done <<REPO_DATA
@@ -326,6 +328,7 @@ REPO_DATA
 
         # output addon download info
         if fetch_zip "$__search_addon_url" "$__search_addon_path"; then
+          printf 1>&2 -- 'Fetched addon from %s (default) to %s...\n' "$__search_addon_url" "$__search_addon_path"
           echo "${__search_addon_version} ${__search_addon_addon_id} ${__search_addon_path}"
         fi
       fi
@@ -341,6 +344,7 @@ REPO_DATA
     # search requisite addons in all repositories
     while read -r __resolve_addon_dependency; do
       if [ -n "$__resolve_addon_dependency" ]; then
+        printf 1>&2 -- 'Found addon %s in %s repository data\n' "$__resolve_addon_addon_id" "$__resolve_addon_repo"
         (resolve_addon "$__resolve_addon_dependency") || __resolve_addon_rc="$?"
       else
         printf 1>&2 -- 'Could not find addon %s in %s repository data\n' "$__resolve_addon_addon_id" "$__resolve_addon_repo"
@@ -353,6 +357,7 @@ REPO_DATA
   if addon_installed "$__resolve_addon_addon_id"; then
     while read -r __resolve_addon_dependency; do
       if [ -n "$__resolve_addon_dependency" ]; then
+        printf 1>&2 -- 'Found addon %s in %s addon data\n' "$__resolve_addon_addon_id" "$__resolve_addon_addon_id"
         (resolve_addon "$__resolve_addon_dependency") || __resolve_addon_rc="$?"
       else
         printf 1>&2 -- 'Could not find addon %s in %s addon data\n' "$__resolve_addon_addon_id" "$__resolve_addon_addon_id"
