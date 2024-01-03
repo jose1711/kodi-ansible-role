@@ -30,13 +30,26 @@
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- name: Stop Kodi via service
-  systemd:
-    name: "{{ kodi_systemd_service }}"
-    state: stopped
-  when: "kodi_systemd_service is defined"
-  tags:
-  - configure
+- when: "kodi_systemd_service is defined"
+  block:
+  # Ensure the service is started so that Kodi populates the addon database and
+  # performs other setup that may be required by addon installation and
+  # configuration tasks.
+  - name: Start Kodi via service
+    systemd:
+      name: "{{ kodi_systemd_service }}"
+      state: started
+    ignore_errors: True
+    tags:
+    - configure
+    - get_addons
+
+  - name: Stop Kodi via service
+    systemd:
+      name: "{{ kodi_systemd_service }}"
+      state: stopped
+    tags:
+    - configure
 
 - when: "kodi_systemd_service is not defined"
   block:
