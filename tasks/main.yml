@@ -62,14 +62,25 @@
   # Ensure the service is started so that Kodi populates the addon database and
   # performs other setup that may be required by addon installation and
   # configuration tasks.
-  - name: Start Kodi via service
-    systemd:
-      name: "{{ kodi_systemd_service }}"
-      state: started
-    ignore_errors: True
-    tags:
-    - configure
-    - get_addons
+  - when: "kodi_attempt_start | bool"
+    block:
+    - name: Start Kodi via service
+      systemd:
+        name: "{{ kodi_systemd_service }}"
+        state: started
+      register: kodi_start
+      ignore_errors: True
+      tags:
+      - configure
+      - get_addons
+
+    - name: Let Kodi run for a bit
+      pause:
+        seconds: "{{ kodi_start_seconds | int }}"
+      when: 'kodi_start is changed'
+      tags:
+      - configure
+      - get_addons
 
   - name: Stop Kodi via service
     systemd:
@@ -99,14 +110,102 @@
     - configure
     check_mode: no
 
-  - name: Stop Kodi
+  - when: "(kodi_attempt_start | bool) and ((kodi_running.rc | default(0)) != 0)"
+    block:
+    # Needed in order to initialize addons that depend on "core" addons.
+    - name: Attempt to start Kodi
+      script:
+        cmd: "start_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+      register: kodi_start
+      become_user: "{{ kodi_user }}"
+      become: True
+      when: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      - get_addons
+      check_mode: no
+
+    - name: Let Kodi run for a bit
+      pause:
+        seconds: "{{ kodi_start_seconds | default(10) | int }}"
+      tags:
+      - configure
+      - get_addons
+
+  - name: Store Kodi PID
+    set_fact:
+      kodi_pid: "{{ ((kodi_start | default({})).stdout_lines | default([''])).0 }}"
+
+  - when: "(kodi_attempt_stop | bool) and ((kodi_attempt_start | bool) or ((kodi_running.rc | default(0)) == 0))"
+    block:
+    - name: Attempt to stop Kodi (SIGTERM)
+      script:
+        cmd: "stop_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+        KODI_SEND_EXECUTABLE: "{{ kodi_send_executable }}"
+        KODI_SEND_HOST: "{{ kodi_send_host }}"
+        KODI_SEND_PORT: "{{ kodi_send_port }}"
+        KODI_PID: "{{ kodi_pid }}"
+        KODI_KILL_SIGNAL: TERM
+      changed_when: False
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Check if Kodi is running after killing with SIGTERM
+      shell:
+        cmd: "{{ kodi_check_process_cmd | mandatory }}"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      register: kodi_running
+      ignore_errors: True
+      retries: "{{ kodi_stop_seconds | int }}"
+      delay: 1
+      until: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Attempt to stop Kodi (SIGHUP)
+      script:
+        cmd: "stop_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+        KODI_SEND_EXECUTABLE: "{{ kodi_send_executable }}"
+        KODI_SEND_HOST: "{{ kodi_send_host }}"
+        KODI_SEND_PORT: "{{ kodi_send_port }}"
+        KODI_PID: "{{ kodi_pid }}"
+        KODI_KILL_SIGNAL: HUP
+      when: "(kodi_running.rc | default(0)) == 0"
+      changed_when: False
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Check if Kodi is running after killing with SIGHUP
+      shell:
+        cmd: "{{ kodi_check_process_cmd | mandatory }}"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      register: kodi_running
+      ignore_errors: True
+      retries: "{{ kodi_stop_seconds | int }}"
+      delay: 1
+      until: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      check_mode: no
+
+  - name: Stop playbook execution
     fail:
       msg: "Stop Kodi prior to executing this playbook"
     when: "(kodi_running.rc | default(0)) == 0"
     tags:
     - configure
-
-
 
 - when: 'kodi_version is not defined'
   block:

@@ -30,3 +30,26 @@ kodi_include_default_config: False
 
 kodi_check_process_executable: "{{ mandatory }}"
 kodi_query_version_executable: "{{ kodi_check_process_executable }}"
+
+# The executable for running Kodi
+kodi_executable: kodi
+
+# For the `kodi-send` command line utility
+kodi_send_executable: kodi-send
+kodi_send_host: localhost
+kodi_send_port: 9777
+
+# Whether to attempt to start the Kodi service/process if it hasn't started
+# already
+kodi_attempt_start: False
+
+# Number of seconds to wait before attempting to stop the Kodi process started
+# when `kodi_attempt_start` is enabled
+kodi_start_seconds: 10
+
+# Whether to attempt to stop the Kodi service/process if it is running.
+kodi_attempt_stop: "{{ kodi_attempt_start }}"
+
+# Number of seconds to wait before attempting to stop an active Kodi process
+# when `kodi_attempt_stop` is enabled.
+kodi_stop_seconds: 30

@@ -110,6 +110,14 @@ Role Variables
 - `kodi_check_process_executable`: the executable to use for running `kodi_check_process_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_query_version_cmd`: the command to use for determining the version of Kodi in use.  This command only runs if `kodi_version` is undefined.  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_query_version_executable`: the executable to use for running `kodi_query_version_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
+- `kodi_executable`: the name or path of the executable used for starting Kodi.  See [the platform-specific variables files](/vars) for the values of this variable; the lowest-precedence default is `kodi`.
+- `kodi_send_executable`: the name or path of the `kodi-send` executable.  This role uses `kodi-send` for attempting to stop the Kodi daemon, and for triggering a Kodi refresh after updating Kodi repositories and addons.  Default: `kodi-send`.
+- `kodi_send_host`: the host `kodi-send` should use for communicating with Kodi.  Default: `localhost`.
+- `kodi_send_port`: the port `kodi-send` should use for communicating with Kodi.  Default: `9777`.
+- `kodi_attempt_start`: whether to attempt to start Kodi (via `kodi_systemd_service`, if defined, or via `kodi_executable` if not) when it is not already running.  If this is `False` and this is a fresh Kodi installation (e.g. Kodi has never run on the target system), plugin installation may fail, as Kodi will not yet have performed required addon and repository initialization.  Default: `False`.
+- `kodi_start_seconds`: number of seconds to wait before attempting to stop the Kodi process started when `kodi_attempt_start` is enabled.  Default: `10`.
+- `kodi_attempt_stop`: whether to attempt to stop the Kodi if it is running.  If this is false, and Kodi is running, then this role will exit with an error. Only applies when `kodi_systemd_service` is not defined.  Default: the value of `kodi_attempt_start`.
+- `kodi_stop_seconds`: number of seconds to wait before attempting to stop an active Kodi process when `kodi_attempt_stop` is enabled.  Default: `30`.
 - `kodi_version`: the version of Kodi in use.  Default: determined by running `kodi_query_version_cmd`.
 
 Installing Addons

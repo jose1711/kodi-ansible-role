@@ -9,6 +9,9 @@ kodi_user_create: False
 
 kodi_systemd_service: mediacenter
 
+# https://github.com/osmc/osmc/blob/006c82b08ac7dfe9ba3d093ac8aa9b543134d048/package/mediacenter-osmc/files/lib/systemd/system/mediacenter.service#L9
+kodi_executable: "/usr/bin/mediacenter"
+
 kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'"
 kodi_check_process_executable: "/bin/bash"
 
