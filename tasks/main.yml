@@ -155,20 +155,24 @@
   set_fact:
     kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
   with_items: "{{ kodi_addon_names | select('match', '^repository.') | list }}"
+  tags:
+  - get_addons
 
 - name: Copy Kodi repository addons
   copy:
     src: "{{ item }}"
     dest: "{{ kodi_data_dir }}/addons"
     owner: "{{ kodi_user }}"
+  with_items: "{{ kodi_addons_upload | default([]) }}"
   tags:
   - get_addons
-  with_items: "{{ kodi_addons_upload | default([]) }}"
 
 - name: Get addon settings for upload
   set_fact:
     kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
   with_items: "{{ kodi_addon_names }}"
+  tags:
+  - copy_addon_settings
 
 - name: Copy addon settings
   copy:
