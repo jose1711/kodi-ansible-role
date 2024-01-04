@@ -16,6 +16,23 @@
   tags:
   - always
 
+# Setup apt repo (Ubuntu only)"
+- name: Add Kodi ppa
+  apt_repository:
+    repo: "ppa:team-xbmc/ppa"
+  when: "ansible_distribution == 'Ubuntu'"
+  tags:
+  - install
+  - get_addons
+
+- name: Install Kodi and related apps
+  package:
+    name: "{{ packages | default([]) }}"
+  when: "(packages | default([]) | length) > 0"
+  tags:
+  - install
+  - get_addons
+
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"
@@ -27,6 +44,15 @@
   - configure
   - get_addons
   - copy_addon_settings
+
+- name: Create Kodi dirs
+  file:
+    state: directory
+    path: "{{ kodi_data_dir }}/addons/"
+    owner: "{{ kodi_user }}"
+  tags:
+  - configure
+  - get_addons
 
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
@@ -80,20 +106,7 @@
     tags:
     - configure
 
-# Setup apt repo (Ubuntu only)"
-- name: Add Kodi ppa
-  apt_repository:
-    repo: "ppa:team-xbmc/ppa"
-  when: "ansible_distribution == 'Ubuntu'"
-  tags:
-  - install
 
-- name: Install Kodi and related apps
-  package:
-    name: "{{ packages | default([]) }}"
-  when: "(packages | default([]) | length) > 0"
-  tags:
-  - install
 
 - when: 'kodi_version is not defined'
   block:
@@ -116,15 +129,6 @@
   debug:
     msg: "kodi version: {{ kodi_version }}"
   tags:
-  - get_addons
-
-- name: Create Kodi dirs
-  file:
-    state: directory
-    path: "{{ kodi_data_dir }}/addons/"
-    owner: "{{ kodi_user }}"
-  tags:
-  - configure
   - get_addons
 
 - name: Get Kodi addons
