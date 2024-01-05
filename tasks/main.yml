@@ -17,13 +17,37 @@
   - always
 
 # Setup apt repo (Ubuntu only)"
-- name: Add Kodi ppa
-  apt_repository:
-    repo: "ppa:team-xbmc/ppa"
-  when: "ansible_distribution == 'Ubuntu'"
-  tags:
-  - install
-  - get_addons
+- when: "ansible_distribution == 'Ubuntu'"
+  block:
+  - name: Create apt trusted keys drop-in directory
+    file:
+      path: "/etc/apt/keyrings"
+      state: directory
+      owner: root
+      group: root
+      mode: "0755"
+    tags:
+    - install
+    - get_addons
+
+  - name: Install the Kodi ppa public key
+    get_url:
+      url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x189701da570c56b9488ef60a6d975c4791e7ee5e"
+      dest: "/etc/apt/keyrings/team-xbmc.asc"
+      owner: root
+      group: root
+      mode: "0644"
+      force: True
+    tags:
+    - install
+    - get_addons
+
+  - name: Add Kodi ppa
+    apt_repository:
+      repo: "deb [signed-by=/etc/apt/keyrings/team-xbmc.asc] https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu {{ ansible_distribution_release }} main"
+    tags:
+    - install
+    - get_addons
 
 - name: Install Kodi and related apps
   package:
