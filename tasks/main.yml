@@ -281,7 +281,7 @@
 
 - name: Get addons for upload
   set_fact:
-    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
+    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True, errors='ignore')] | flatten) }}"
   with_items: "{{ kodi_addon_names | select('match', '^repository.') | list }}"
   tags:
   - get_addons
@@ -297,7 +297,7 @@
 
 - name: Get addon settings for upload
   set_fact:
-    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
+    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True, errors='ignore')] | flatten) }}"
   with_items: "{{ kodi_addon_names }}"
   tags:
   - copy_addon_settings
