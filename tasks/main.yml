@@ -337,9 +337,11 @@
     command: "{{ ansible_python.executable | default(ansible_python_interpreter) | quote }} -c 'import lxml'"
     changed_when: False
     tags: configure
-  - include: configure.yml
+  - include_tasks:
+      file: configure.yml
   rescue:
-  - include: configure_libreelec.yml
+  - include_tasks:
+      file: configure_libreelec.yml
 
 - name: Apply correct ownership to Kodi data directory
   file:
