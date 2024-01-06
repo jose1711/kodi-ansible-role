@@ -6,6 +6,9 @@ packages:
   - libxml2
   - unzip
   - python-lxml
+  - acl
+  - curl
+  - procps
 
 kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi"
 kodi_check_process_executable: "/usr/bin/bash"

@@ -16,7 +16,7 @@
       # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
       # package, so we have to install `kodi-inputstream-adaptive`.
       # Re `acl`: https://github.com/ansible/ansible/issues/74830#issuecomment-848817825
-      raw: 'apt -y update && { apt -y install python3 kodi-inputstream-adaptive acl || apt -y install python kodi-inputstream-adaptive acl; }'
+      raw: 'apt -y update && { apt -y install python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; }'
       ignore_errors: True
       tags: always
 
