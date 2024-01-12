@@ -1,6 +1,6 @@
 - name: Configure xml config files
   xml:
-    path: "~{{ kodi_user }}/.kodi/{{ item.file }}"
+    path: "{{ kodi_data_dir }}/{{ item.file }}"
     xpath: '/{{ item.key }}'
     value: '{{ item.value }}'
     pretty_print: True
@@ -9,7 +9,7 @@
 
 - name: Configure xml config files - add tag
   xml:
-    path: "~{{ kodi_user }}/.kodi/{{ item.file }}"
+    path: "{{ kodi_data_dir}}/{{ item.file }}"
     xpath: '/{{ item.key }}'
     value: '{{ item.type }}'
     attribute: "type"
@@ -19,7 +19,7 @@
 
 - name: Drop default attribute
   xml:
-    path: "~{{ kodi_user }}/.kodi/{{ item.file }}"
+    path: "{{ kodi_data_dir }}/{{ item.file }}"
     xpath: '/{{ item.key }}/@default'
     state: absent
     pretty_print: True

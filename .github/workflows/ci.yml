@@ -1,0 +1,28 @@
+name: Run kodi-ansible-role tests
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+jobs:
+  native:
+    name: Run test playbook
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image:
+          - archlinux/archlinux
+          - debian:11
+          - debian:12
+          - ubuntu:22.04
+          - ubuntu:23.04
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install testing dependencies
+        run: |
+          { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
+          { apt -y update && apt -y install ansible sudo ; } || :
+      - name: Run test playbook
+        run: |
+          ansible-playbook -vv --become -c local -i localhost, ./tests/test.yml

@@ -3,20 +3,59 @@
   include_vars: "default.yml"
   when: 'kodi_include_default_config | default(False) | bool'
   tags:
-  - install
-  - configure
+  - always
 
 # tasks file for kodi-ansible-role
 - name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
+  include_vars: "{{ item }}"
+  with_first_found:
+  - files:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+    - "fallback.yml"
+  tags:
+  - always
+
+# Setup apt repo (Ubuntu only)"
+- when: "ansible_distribution == 'Ubuntu'"
+  block:
+  - name: Create apt trusted keys drop-in directory
+    file:
+      path: "/etc/apt/keyrings"
+      state: directory
+      owner: root
+      group: root
+      mode: "0755"
+    tags:
+    - install
+    - get_addons
+
+  - name: Install the Kodi ppa public key
+    get_url:
+      url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x189701da570c56b9488ef60a6d975c4791e7ee5e"
+      dest: "/etc/apt/keyrings/team-xbmc.asc"
+      owner: root
+      group: root
+      mode: "0644"
+      force: True
+    tags:
+    - install
+    - get_addons
+
+  - name: Add Kodi ppa
+    apt_repository:
+      repo: "deb [signed-by=/etc/apt/keyrings/team-xbmc.asc] https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu {{ ansible_distribution_release }} main"
+    tags:
+    - install
+    - get_addons
+
+- name: Install Kodi and related apps
+  package:
+    name: "{{ packages | default([]) }}"
+  when: "(packages | default([]) | length) > 0"
   tags:
   - install
-  - configure
-
-- name: Set kodi_user to osmc (OSMC)
-  set_fact:
-    kodi_user: "osmc"
-  when: "ansible_distribution == 'OSMC'"
+  - get_addons
 
 - name: Create Kodi user
   user:
@@ -24,89 +63,190 @@
     shell: "{{ kodi_shell }}"
     groups: "{{ kodi_groups }}"
     append: True
-  when: "ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
+  when: 'kodi_user_create | default(True) | bool'
   tags:
   - configure
   - get_addons
   - copy_addon_settings
 
+- name: Create Kodi dirs
+  file:
+    state: directory
+    path: "{{ kodi_data_dir }}/addons/"
+    owner: "{{ kodi_user }}"
+  tags:
+  - configure
+  - get_addons
+
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- name: Check if Kodi is running
-  shell:
-    cmd: "{{ check_kodi_process[ansible_os_family].cmd }}"
-    executable: "{{ check_kodi_process[ansible_os_family].executable }}"
-  register: kodi_running
-  ignore_errors: True
-  vars:
-    check_kodi_process:
-      'Debian': {cmd: "ps -U {{ kodi_user }} -o command | grep -e '^/usr/lib/.*kodi.bin' -e '^/usr/lib/.*kodi-rbpi'", executable: "/bin/bash"}
-      'Ubuntu': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
-      'Archlinux': {cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/lib/kodi/[k]odi", executable: "/usr/bin/bash"}
-      'LibreELEC': {cmd: "ps ux | grep -wq [k]odi.bin", executable: "/usr/bin/sh"}
-      'OSMC': {cmd: "ps -U {{ kodi_user }} -o command | grep '^/usr/lib/.*kodi.bin'", executable: "/bin/bash"}
-  tags:
-  - configure
-  check_mode: no
+- when: "kodi_systemd_service is defined"
+  block:
+  # Ensure the service is started so that Kodi populates the addon database and
+  # performs other setup that may be required by addon installation and
+  # configuration tasks.
+  - when: "kodi_attempt_start | bool"
+    block:
+    - name: Start Kodi via service
+      systemd:
+        name: "{{ kodi_systemd_service }}"
+        state: started
+      register: kodi_start
+      ignore_errors: True
+      tags:
+      - configure
+      - get_addons
 
-- name: Stop Kodi via service (LibreELEC)
-  systemd:
-    name: kodi
-    state: stopped
-  when: "kodi_running.rc == 0 and ansible_distribution == 'LibreELEC'"
-  tags:
-  - configure
+    - name: Let Kodi run for a bit
+      pause:
+        seconds: "{{ kodi_start_seconds | int }}"
+      when: 'kodi_start is changed'
+      tags:
+      - configure
+      - get_addons
 
-- name: Stop Kodi via service (OSMC)
-  systemd:
-    name: mediacenter
-    state: stopped
-  when: "kodi_running.rc == 0 and ansible_distribution == 'OSMC'"
-  tags:
-  - configure
+  - name: Stop Kodi via service
+    systemd:
+      name: "{{ kodi_systemd_service }}"
+      state: stopped
+    tags:
+    - configure
 
-- name: Stop Kodi
-  fail:
-    msg: "Stop Kodi prior to executing this playbook"
-  when: "kodi_running.rc == 0 and ansible_distribution != 'LibreELEC' and ansible_distribution != 'OSMC'"
-  tags:
-  - configure
+- when: "kodi_systemd_service is not defined"
+  block:
+  - name: Ensure that Kodi process-checking variables are defined
+    assert:
+      that:
+      - "kodi_check_process_cmd is defined"
+      - "kodi_check_process_executable is defined"
+      msg: "Please define the variables 'kodi_check_process_cmd' and 'kodi_check_process_executable'."
+    tags:
+    - configure
 
-# Setup apt repo (Ubuntu only)"
-- name: Add Kodi ppa
-  apt_repository:
-    repo: "ppa:team-xbmc/ppa"
-  when: "ansible_distribution == 'Ubuntu'"
-  tags:
-  - install
+  - name: Check if Kodi is running
+    shell:
+      cmd: "{{ kodi_check_process_cmd | mandatory }}"
+      executable: "{{ kodi_check_process_executable | mandatory }}"
+    register: kodi_running
+    ignore_errors: True
+    tags:
+    - configure
+    check_mode: no
 
-- name: Install Kodi and related apps
-  package:
-    name: "{{ packages }}"
-  when: "ansible_distribution != 'LibreELEC'"
-  tags:
-  - install
+  - when: "(kodi_attempt_start | bool) and ((kodi_running.rc | default(0)) != 0)"
+    block:
+    # Needed in order to initialize addons that depend on "core" addons.
+    - name: Attempt to start Kodi
+      script:
+        cmd: "start_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+      register: kodi_start
+      become_user: "{{ kodi_user }}"
+      become: True
+      when: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      - get_addons
+      check_mode: no
 
-- name: Query Kodi (major) version
-  shell: "{{ kodi_query_version[ansible_os_family] }}"
-  register: kodi_version
-  vars:
-    kodi_query_version:
-      'Debian': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
-      'Ubuntu': "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
-      'Archlinux': "pacman -Q kodi | awk '{print $2}'"
-      'LibreELEC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
-      'OSMC': "/usr/lib/kodi/kodi.bin --version | grep -om1 '[[:digit:]]\\+\\(\\.[[:digit:]]\\+\\)\\+' | sort -r -V | head -1"
-  check_mode: no
-  tags:
-  - get_addons
+    - name: Let Kodi run for a bit
+      pause:
+        seconds: "{{ kodi_start_seconds | default(10) | int }}"
+      tags:
+      - configure
+      - get_addons
 
-- name: Set Kodi version as ansible fact
-  set_fact:
-    kodi_version: "{{ kodi_version.stdout }}"
-  tags:
-  - get_addons
+  - name: Store Kodi PID
+    set_fact:
+      kodi_pid: "{{ ((kodi_start | default({})).stdout_lines | default([''])).0 }}"
+
+  - when: "(kodi_attempt_stop | bool) and ((kodi_attempt_start | bool) or ((kodi_running.rc | default(0)) == 0))"
+    block:
+    - name: Attempt to stop Kodi (SIGTERM)
+      script:
+        cmd: "stop_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+        KODI_SEND_EXECUTABLE: "{{ kodi_send_executable }}"
+        KODI_SEND_HOST: "{{ kodi_send_host }}"
+        KODI_SEND_PORT: "{{ kodi_send_port }}"
+        KODI_PID: "{{ kodi_pid }}"
+        KODI_KILL_SIGNAL: TERM
+      changed_when: False
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Check if Kodi is running after killing with SIGTERM
+      shell:
+        cmd: "{{ kodi_check_process_cmd | mandatory }}"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      register: kodi_running
+      ignore_errors: True
+      retries: "{{ kodi_stop_seconds | int }}"
+      delay: 1
+      until: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Attempt to stop Kodi (SIGHUP)
+      script:
+        cmd: "stop_kodi.sh"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      environment:
+        KODI_EXECUTABLE: "{{ kodi_executable }}"
+        KODI_SEND_EXECUTABLE: "{{ kodi_send_executable }}"
+        KODI_SEND_HOST: "{{ kodi_send_host }}"
+        KODI_SEND_PORT: "{{ kodi_send_port }}"
+        KODI_PID: "{{ kodi_pid }}"
+        KODI_KILL_SIGNAL: HUP
+      when: "(kodi_running.rc | default(0)) == 0"
+      changed_when: False
+      tags:
+      - configure
+      check_mode: no
+
+    - name: Check if Kodi is running after killing with SIGHUP
+      shell:
+        cmd: "{{ kodi_check_process_cmd | mandatory }}"
+        executable: "{{ kodi_check_process_executable | mandatory }}"
+      register: kodi_running
+      ignore_errors: True
+      retries: "{{ kodi_stop_seconds | int }}"
+      delay: 1
+      until: "(kodi_running.rc | default(0)) != 0"
+      tags:
+      - configure
+      check_mode: no
+
+  - name: Stop playbook execution
+    fail:
+      msg: "Stop Kodi prior to executing this playbook"
+    when: "(kodi_running.rc | default(0)) == 0"
+    tags:
+    - configure
+
+- when: 'kodi_version is not defined'
+  block:
+  - name: Query Kodi (major) version
+    shell:
+      cmd: "{{ kodi_query_version_cmd | mandatory }}"
+      executable: "{{ kodi_query_version_executable | mandatory }}"
+    register: kodi_query_version_result
+    check_mode: no
+    tags:
+    - get_addons
+
+  - name: Set Kodi version as ansible fact
+    set_fact:
+      kodi_version: "{{ kodi_query_version_result.stdout }}"
+    tags:
+    - get_addons
 
 - name: Show Kodi version
   debug:
@@ -114,30 +254,26 @@
   tags:
   - get_addons
 
-- name: Create Kodi dirs
-  file:
-    state: directory
-    path: "~{{ kodi_user }}/.kodi/addons/"
-    owner: "{{ kodi_user }}"
-  tags:
-  - configure
-  - get_addons
-
 - name: Get Kodi addons
   script:
-    cmd: "get_kodi_addon.sh {{ item | quote }} {{ kodi_version | quote }}"
-  with_items: "{{ kodi_addon_names }}"
+    cmd: "get_kodi_addon.py --kodi-version {{ kodi_version | quote }} install {{ kodi_addons | map('quote') | join(' ') }}"
+    # Use a known python interpreter rather than relying on (say) `/usr/bin/env python`.
+    executable: "{{ ansible_python.executable | default(ansible_python_interpreter) }}"
   become_user: "{{ kodi_user }}"
   become: True
   environment:
     REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
     ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
+    KODI_USER: "{{ kodi_user }}"
+    KODI_DATA_DIR: "{{ kodi_data_dir }}"
+    KODI_SEND_HOST: "{{ kodi_send_host }}"
+    KODI_SEND_PORT: "{{ kodi_send_port }}"
   tags:
   - get_addons
 
-- name: Set permissions on .kodi/
+- name: Set permissions on Kodi data directory
   file:
-    path: "~{{ kodi_user }}/.kodi"
+    path: "{{ kodi_data_dir }}"
     owner: "{{ kodi_user }}"
   tags:
   - configure
@@ -145,27 +281,31 @@
 
 - name: Get addons for upload
   set_fact:
-    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True)] | flatten) }}"
+    kodi_addons_upload: "{{ (kodi_addons_upload | default([])) + ([lookup('first_found', ('addons/' + item), skip=True, errors='ignore')] | flatten) }}"
   with_items: "{{ kodi_addon_names | select('match', '^repository.') | list }}"
+  tags:
+  - get_addons
 
 - name: Copy Kodi repository addons
   copy:
     src: "{{ item }}"
-    dest: "~{{ kodi_user }}/.kodi/addons"
+    dest: "{{ kodi_data_dir }}/addons"
     owner: "{{ kodi_user }}"
+  with_items: "{{ kodi_addons_upload | default([]) }}"
   tags:
   - get_addons
-  with_items: "{{ kodi_addons_upload | default([]) }}"
 
 - name: Get addon settings for upload
   set_fact:
-    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True)] | flatten) }}"
+    kodi_addon_settings_upload: "{{ (kodi_addon_settings_upload | default([])) + ([lookup('first_found', ('addon_data/' + item), skip=True, errors='ignore')] | flatten) }}"
   with_items: "{{ kodi_addon_names }}"
+  tags:
+  - copy_addon_settings
 
 - name: Copy addon settings
   copy:
     src: "{{ item }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
+    dest: "{{ kodi_data_dir }}/userdata/addon_data"
     owner: "{{ kodi_user }}"
   with_items: "{{ kodi_addon_settings_upload | default([]) }}"
   tags:
@@ -173,14 +313,14 @@
 
 - name: Create directories for xml files
   file:
-    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+    path: "{{ kodi_data_dir }}/{{ item }}"
     state: directory
   with_items: "{{ kodi_config_final | map(attribute='file') | map('dirname') | unique }}"
   tags: configure
 
 - name: Check if xml config files exist
   stat:
-    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+    path: "{{ kodi_data_dir }}/{{ item }}"
   with_items: "{{ kodi_config_final | map(attribute='file') | unique }}"
   tags: configure
   register: stat_result
@@ -188,27 +328,24 @@
 - name: Create empty xml setting file if needed
   copy:
     content: "<settings></settings>"
-    dest: "~{{ kodi_user }}/.kodi/{{ item }}"
-  with_items: "{{ stat_result.results
-                  | selectattr('stat.exists', 'false')
-                  | map(attribute='item')
-                  | list }}"
+    dest: "{{ kodi_data_dir }}/{{ item }}"
+  with_items: "{{ stat_result.results | selectattr('stat.exists', 'false') | map(attribute='item') | list }}"
   tags: configure
 
-- include: configure.yml
-  when: "ansible_distribution != 'LibreELEC'"
+- block:
+  - name: "Test if Ansible 'xml' module prerequisites are available"
+    command: "{{ ansible_python.executable | default(ansible_python_interpreter) | quote }} -c 'import lxml'"
+    changed_when: False
+    tags: configure
+  - include_tasks:
+      file: configure.yml
+  rescue:
+  - include_tasks:
+      file: configure_libreelec.yml
 
-- include: configure_libreelec.yml
-  when: "ansible_distribution == 'LibreELEC'"
-
-- name: Show message to LibreELEC users
-  debug:
-    msg: "Update addons Kodi inside Kodi"
-  when: "ansible_distribution == 'LibreELEC'"
-
-- name: Apply correct ownership to ~/.kodi
+- name: Apply correct ownership to Kodi data directory
   file:
-    path: "~{{ kodi_user }}/.kodi"
+    path: "{{ kodi_data_dir }}"
     state: directory
     recurse: True
     owner: "{{ kodi_user }}"
@@ -219,48 +356,40 @@
 
 - name: Slurp favourites from master installation
   slurp:
-    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/favourites.xml"
+    src: "{{ kodi_master_kodi_data_dir }}/userdata/favourites.xml"
   register: favourites
   delegate_to: "{{ kodi_master_installation }}"
-  when: kodi_copy_favourites
+  when: 'kodi_copy_favourites | default(False) | bool'
   tags: transfer_favourites
 
 - name: Slurp RSS feeds from master installation
   slurp:
-    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/RssFeeds.xml"
+    src: "{{ kodi_master_kodi_data_dir }}/userdata/RssFeeds.xml"
   register: rssfeeds
   delegate_to: "{{ kodi_master_installation }}"
-  when: kodi_copy_feeds
+  when: 'kodi_copy_feeds | default(False) | bool'
   tags: transfer_feeds
 
 - name: Transfer favourites from master installation
   copy:
     content: "{{ favourites['content'] | b64decode }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
+    dest: "{{ kodi_data_dir }}/userdata/favourites.xml"
     backup: True
-  when: kodi_copy_favourites
+  when: 'kodi_copy_favourites | default(False) | bool'
   tags: transfer_favourites
 
 - name: Transfer RSS feeds from master installation
   copy:
     content: "{{ favourites['content'] | b64decode }}"
-    dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
+    dest: "{{ kodi_data_dir }}/userdata/RSSFeeds.xml"
     backup: True
-  when: kodi_copy_feeds
+  when: 'kodi_copy_feeds | default(True) | bool'
   tags: transfer_feeds
 
-- name: Start Kodi via service (LibreELEC)
+- name: Start Kodi via service
   systemd:
-    name: kodi
+    name: "{{ kodi_systemd_service }}"
     state: started
-  when: "ansible_distribution == 'LibreELEC'"
-  tags:
-  - configure
-
-- name: Start Kodi via service (OSMC)
-  systemd:
-    name: mediacenter
-    state: started
-  when: "ansible_distribution == 'OSMC'"
+  when: "kodi_systemd_service is defined"
   tags:
   - configure

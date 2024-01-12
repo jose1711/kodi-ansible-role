@@ -4,5 +4,13 @@ packages:
   - kodi-eventclients-kodi-send
   - libxml2-utils
   - unzip
-  - python-lxml
+  - 'python*-lxml'
   - acl
+  - curl
+  - procps
+
+kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep -e '^/usr/lib/.*kodi.bin' -e '^/usr/lib/.*kodi-rbpi'"
+kodi_check_process_executable: "/bin/bash"
+
+kodi_query_version_cmd: "dpkg -s kodi | awk -F: '/^Version:/{print $3}'"
+kodi_query_version_executable: "{{ kodi_check_process_executable }}"
