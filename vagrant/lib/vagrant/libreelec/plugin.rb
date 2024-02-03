@@ -1,5 +1,4 @@
 require 'vagrant'
-require File.expand_path('plugins/guests/debian/plugin', Vagrant.source_root)
 
 module VagrantPlugins
   module LibreELEC
@@ -15,7 +14,15 @@ module VagrantPlugins
       end
 
       guest_capability(GUEST_NAME, :change_host_name) do
+        require File.expand_path('plugins/guests/debian/plugin', Vagrant.source_root)
         VagrantPlugins::GuestDebian::ChangeHostName
+      end
+
+      # `/etc/fstab` exists in the LibreELEC guest but is not writable (it's on
+      # the squashfs partition).  Stop Vagrant from trying to write to the file
+      # by nil-ifying the relevant guest capability.
+      guest_capability(GUEST_NAME, :persist_mount_shared_folder) do
+        nil
       end
     end
   end

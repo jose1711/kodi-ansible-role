@@ -1,0 +1,9 @@
+  config.ssh.username = 'root'
+  config.ssh.password = 'libreelec'
+
+  config.vm.boot_timeout = 1800
+
+  config.vm.provider :libvirt do |domain|
+    domain.cpus = 2
+    domain.memory = 2048
+  end

@@ -1,0 +1,72 @@
+#!/bin/sh
+
+set -eu
+
+box="${1:-LibreELEC-Generic.x86_64-11.0.6.box}"
+shift 2>/dev/null || :
+
+vagrantfile_add_rel="${0%/*}/../vagrant/share/libreelec/Vagrantfile"
+vagrantfile_add="$({ realpath "$vagrantfile_add_rel" || readlink -f "$vagrantfile_add_rel" ; } 2>/dev/null)"
+
+export CREATE_BOX_IMG_ARCHIVE_BASEURL="${CREATE_BOX_IMG_ARCHIVE_BASEURL:-https://archive.libreelec.tv/archive}"
+
+# 1. Resize the partition meant for `/storage` to the maximum possible extent.
+#    Through experimentation, it looks like we cannot resize to anything beyond
+#    the 34th-from-last sector (presumably this is where the GPT data
+#    structures live).
+# 2. Mount the image, then mount the `SYSTEM` squashfs, then mount the `/flash`
+#    volume and `/storage` volume.
+# 3. Add the Vagrant insecure (bootstrap) public keys to the `root` user's
+#    authorized keys file.
+# 4. Add the override file for the `kodi.service` system unit; the changes
+#    wrought by this override file will prevent LibreELEC from rebooting in
+#    case `kodi.service` restarts "too many" times.
+# 5. Add the `kodi.conf` file that makes Kodi run in headless mode.
+# 6. Edit the bootloader files.
+# 7. Finally, unmount everything and exit.
+exec "${0%/*}/create-box" "$box" "" "$vagrantfile_add" "$@" <<'GUESTFISH_PROGRAM'
+run
+
+part-expand-gpt /dev/sda
+part-resize /dev/sda 2 -34
+resize2fs /dev/sda2
+
+mkmountpoint /img
+mkmountpoint /sqsh
+mount /dev/sda1 /img
+mount-loop /img/SYSTEM /sqsh
+mount /dev/sda1 /sqsh/flash
+mount /dev/sda2 /sqsh/storage
+
+mkdir-p /sqsh/storage/.ssh
+chown 0 0 /sqsh/storage/.ssh
+chmod 0700 /sqsh/storage/.ssh
+
+upload @vagrant_keys@ /sqsh/storage/.ssh/authorized_keys
+chmod 0600 /sqsh/storage/.ssh/authorized_keys
+chown 0 0 /sqsh/storage/.ssh/authorized_keys
+
+mkdir-p /sqsh/storage/.config/system.d/kodi.service.d
+upload @toplevel@/vagrant/share/libreelec/kodi.service.d.override.conf /sqsh/storage/.config/system.d/kodi.service.d/override.conf
+chmod 0644 /sqsh/storage/.config/system.d/kodi.service.d/override.conf
+chown 0 0 /sqsh/storage/.config/system.d/kodi.service.d/override.conf
+
+upload @toplevel@/vagrant/share/libreelec/kodi.conf /sqsh/storage/.config/kodi.conf
+chmod 0644 /sqsh/storage/.config/kodi.conf
+chown 0 0 /sqsh/storage/.config/kodi.conf
+
+download /sqsh/flash/syslinux.cfg syslinux.cfg
+! sed -i -e 's/^DEFAULT.*/DEFAULT run/' -e '/^[[:space:]]*APPEND/ { s/$/ ssh/ }' syslinux.cfg
+upload syslinux.cfg /sqsh/flash/syslinux.cfg
+! rm -f syslinux.cfg
+
+download /sqsh/flash/EFI/BOOT/grub.cfg grub.cfg
+! sed -i -e 's/\(^set[[:space:]]\+default="\)[^"]*/\1Run/' -e '/^[[:space:]]*linux/ { s/$/ ssh/ }' grub.cfg
+upload grub.cfg /sqsh/flash/EFI/BOOT/grub.cfg
+! rm -f grub.cfg
+
+umount /sqsh/flash
+umount /sqsh/storage
+umount /sqsh
+umount /img
+GUESTFISH_PROGRAM

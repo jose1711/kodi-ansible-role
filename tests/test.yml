@@ -21,7 +21,12 @@
       # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
       # package, so we have to install `kodi-inputstream-adaptive`.
       # Re `acl`: https://github.com/ansible/ansible/issues/74830#issuecomment-848817825
-      raw: 'apt -y update && { apt -y install python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; }'
+      raw: |
+        if command -v mediacenter 1>/dev/null 2>&1; then
+          apt -y update && { apt -y install python3 || apt -y install python; };
+        else
+          apt -y update && { apt -y install python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; };
+        fi
       ignore_errors: True
       tags: always
 
@@ -49,6 +54,11 @@
           - 'jellyfin_cached=https://repo.jellyfin.org/releases/client/kodi/addons.xml'
           - 'sandmann79_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages/addons.xml'
           - 'sandmann79_py3_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml'
+          # XXX we include this repository for all target machines, but it will
+          # only work for LibreELEC machines.  This should be okay, as the only
+          # addons we need from this repository should already be present on
+          # non-LibreELEC hosts (e.g. the `inputstream.adaptive` addon).
+          - 'libreelec_cached=https://addons.libreelec.tv/11.80.4/Generic/x86_64/addons.xml.gz'
         kodi_config:
           - file: 'userdata/guisettings.xml'
             key: 'settings/setting[@id="input.libinputkeyboardlayout"]'

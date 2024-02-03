@@ -1,0 +1,115 @@
+#!/bin/sh
+
+PS4='+ ${BASH_SOURCE:-${0}}@${LINENO:-0}${FUNCNAME:+#${FUNCNAME}()}: '
+
+set -eu
+
+looks_like_toplevel() {
+    [ -d "${1?}/vagrant/share" ]
+}
+
+if ! toplevel="$(git rev-parse --show-toplevel 2>/dev/null)" || ! looks_like_toplevel "$toplevel"; then
+    if ! toplevel="$(readlink -f "${0%/*}")" || ! looks_like_toplevel "$toplevel"; then
+        if ! toplevel="${PWD:-$(pwd 2>/dev/null)}" || ! looks_like_toplevel "$toplevel"; then
+            if ! toplevel=. || ! looks_like_toplevel "$toplevel"; then
+                exit 75
+            fi
+        fi
+    fi
+fi
+
+box="${1:?please specify a box name or path}"
+
+case "$box" in
+    */*)
+        box="$({ realpath -m "$box" || readlink -m "$box" ; } 2>/dev/null)"
+        dir="${box%/*}"
+        box_name="${box##*/}"
+        ;;
+    *)
+        dir="${toplevel}/tmp"
+        box_name="$box"
+        box="${dir}/${box_name}"
+        ;;
+esac
+
+cleanup() {
+    if [ -n "${tmpdir:-}" ]; then
+        rm -rf --one-file-system --preserve-root "$tmpdir" 2>/dev/null || rm -rf "$tmpdir"
+    fi
+}
+
+trap cleanup INT TERM QUIT EXIT
+
+mkdir -p "$dir"
+
+tmpdir="$(mktemp -d "${dir}/.${0##*/}.XXXXXXXXXX")"
+cd "$tmpdir"
+
+name="${box_name%.box}"
+img_archive_url="${2:-"${CREATE_BOX_IMG_ARCHIVE_BASEURL:?please specify an image archive URL or base URL}/${name}.img.gz"}"
+img_archive="${img_archive_url##*/}"
+img="${img_archive%.gz}"
+disk="${img%.img}.qcow2"
+shrunk="${disk%.qcow2}.shrunk.qcow2"
+
+vagrant_keys_url='https://raw.githubusercontent.com/hashicorp/vagrant/main/keys/vagrant.pub'
+vagrant_keys="${vagrant_keys_url##*/}"
+
+prepare_qcow2() {
+    if format="$(qemu-img info --output=json "$img" | jq --raw-output .format)" && [ "$format" != qcow2 ]; then
+        qemu-img convert -f "$format" -O qcow2 "$img" "$disk"
+    else
+        mv -f "$img" "$disk"
+    fi
+
+    qemu-img convert -f qcow2 -O qcow2 "$disk" "$shrunk"
+
+    qemu-img resize "$shrunk" 2G
+}
+
+case "$img_archive_url" in
+    *://*)
+        curl -fsSLo "$img_archive" "$img_archive_url"
+        gunzip -f "$img_archive"
+        ;;
+    *.gz)
+        gunzip -f "$img_archive"
+        ;;
+    *)
+        if [ -e "$img_archive_url" ]; then
+            mv -f "$img_archive_url" "$img"
+        else
+            prepare_qcow2() {
+                qemu-img create -f qcow2 "$shrunk" 2G
+            }
+        fi
+        ;;
+esac
+
+prepare_qcow2
+
+curl -fsSLO "$vagrant_keys_url"
+
+if ! [ -t 0 ]; then
+    awk -v name="$name" -v toplevel="$toplevel" -v vagrant_keys="$vagrant_keys" '{
+        gsub(/@name@/, name);
+        gsub(/@toplevel@/, toplevel);
+        gsub(/@vagrant_keys@/, vagrant_keys);
+        print;
+    }' | guestfish --rw -a "$shrunk"
+fi
+
+stty sane 1>/dev/null 2>&1 || :
+
+rm -f "${shrunk%.qcow2}.box" "$box_name" "$vagrant_keys" "$disk" "$img"
+
+# `xargs`, rather than `find ... -exec`, to ensure we run
+# `vagrant-libvirt-create-box` even if no files other than `"$shrunk"` were
+# found.
+find "${PWD:-$(pwd)}" -type f -a '!' -name "$shrunk" -print0 \
+    | xargs -0 "${SHELL:-/bin/sh}" vagrant-libvirt-create-box "$shrunk" "$box_name" "${3:-/dev/null}"
+
+rm -f "$shrunk"
+
+install -D "$box_name" "$box"
