@@ -1,5 +1,7 @@
 packages: []
 
+kodi_user: root
+
 kodi_user_create: False
 
 kodi_service: kodi
