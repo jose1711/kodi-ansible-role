@@ -4,6 +4,11 @@
   become: True
   gather_facts: False
   tasks:
+    - name: 'test | install dependencies with apk'
+      raw: 'apk add -U python3 && apk add -U kodi-inputstream-adaptive --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing/'
+      ignore_errors: True
+      tags: always
+
     - name: 'test | install python with pacman'
       # https://wiki.archlinux.org/title/Pacman/Package_signing#Upgrade_system_regularly
       # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi

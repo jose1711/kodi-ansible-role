@@ -1,4 +1,8 @@
 Vagrant.configure(2) do |config|
+  config.vm.define :alpine do |alpine|
+    alpine.vm.box = 'generic/alpine319'
+  end
+
   config.vm.define :archlinux do |archlinux|
     archlinux.vm.box = 'archlinux/archlinux'
   end

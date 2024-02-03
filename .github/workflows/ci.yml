@@ -10,6 +10,7 @@ jobs:
     strategy:
       matrix:
         image:
+          - alpine:3
           - archlinux/archlinux
           - debian:11
           - debian:12
@@ -21,8 +22,9 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install testing dependencies
         run: |
-          { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
+          { apk add --no-cache ansible sudo ; } || :
           { apt -y update && apt -y install ansible sudo ; } || :
+          { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
       - name: Run test playbook
         run: |
           ansible-playbook -vv --become -c local -i localhost, ./tests/test.yml
