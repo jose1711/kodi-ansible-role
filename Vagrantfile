@@ -1,4 +1,9 @@
 Vagrant.configure(2) do |config|
+  config.vm.provider :libvirt do |domain|
+    # Listen on all addresses
+    domain.graphics_ip = '::'
+  end
+
   config.vm.define :alpine do |alpine|
     alpine.vm.box = 'generic/alpine319'
   end
