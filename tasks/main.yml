@@ -113,8 +113,8 @@
       - get_addons
 
     - name: Let Kodi run for a bit
-      pause:
-        seconds: "{{ kodi_start_seconds | int }}"
+      wait_for:
+        timeout: "{{ kodi_start_seconds | default(10) | int }}"
       when: 'kodi_start is changed'
       tags:
       - configure
@@ -167,8 +167,8 @@
       check_mode: no
 
     - name: Let Kodi run for a bit
-      pause:
-        seconds: "{{ kodi_start_seconds | default(10) | int }}"
+      wait_for:
+        timeout: "{{ kodi_start_seconds | default(10) | int }}"
       tags:
       - configure
       - get_addons
