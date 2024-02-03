@@ -1,7 +1,5 @@
 packages:
-  - libxml2-utils
   - python3-lxml
-  - sqlite3
   - file
 
 kodi_user: osmc
