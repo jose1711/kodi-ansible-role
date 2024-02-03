@@ -25,7 +25,6 @@
       ignore_errors: True
       tags: always
 
-
 - hosts: all
   become: True
   roles:
