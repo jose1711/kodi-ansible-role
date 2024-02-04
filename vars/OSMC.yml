@@ -7,7 +7,7 @@ packages:
 kodi_user: osmc
 kodi_user_create: False
 
-kodi_systemd_service: mediacenter
+kodi_service: mediacenter
 
 # https://github.com/osmc/osmc/blob/006c82b08ac7dfe9ba3d093ac8aa9b543134d048/package/mediacenter-osmc/files/lib/systemd/system/mediacenter.service#L9
 kodi_executable: "/usr/bin/mediacenter"

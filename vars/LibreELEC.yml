@@ -2,7 +2,7 @@ packages: []
 
 kodi_user_create: False
 
-kodi_systemd_service: kodi
+kodi_service: kodi
 
 # https://github.com/LibreELEC/LibreELEC.tv/blob/c1cab83d883d18e6bf110367693b85ab91fb4038/packages/mediacenter/kodi/system.d/kodi.service#L12
 kodi_executable: "/usr/lib/kodi/kodi.sh"

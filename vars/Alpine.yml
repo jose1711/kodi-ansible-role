@@ -13,7 +13,7 @@ packages:
 # file attempts to execute `/usr/bin/kodi` :(
 kodi_executable: '/usr/bin/kodi-gbm'
 
-kodi_systemd_service: kodi
+kodi_service: kodi
 
 kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/bin/[k]odi-gbm"
 kodi_check_process_executable: "/bin/sh"

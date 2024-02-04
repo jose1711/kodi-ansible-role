@@ -78,10 +78,24 @@
   - configure
   - get_addons
 
+- when: "kodi_systemd_service is defined"
+  block:
+  - name: "Issue warning about variable deprecation"
+    debug:
+      msg: "`kodi_systemd_service` is deprecated; please use `kodi_service` instead"
+  - name: "Check that we are not going to overwrite `kodi_service`"
+    assert:
+      that:
+        - "(kodi_service is not defined) or  (kodi_service == kodi_systemd_service)"
+      msg: "`kodi_service` and `kodi_systemd_service` have conflicting definitions; please define only `kodi_service`"
+  - name: "Set kodi_service variable"
+    set_fact:
+      kodi_service: "{{ kodi_systemd_service }}"
+
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- when: "kodi_systemd_service is defined"
+- when: "kodi_service is defined"
   block:
   # Ensure the service is started so that Kodi populates the addon database and
   # performs other setup that may be required by addon installation and
@@ -90,7 +104,7 @@
     block:
     - name: Start Kodi via service
       service:
-        name: "{{ kodi_systemd_service }}"
+        name: "{{ kodi_service }}"
         state: started
       register: kodi_start
       ignore_errors: True
@@ -108,12 +122,12 @@
 
   - name: Stop Kodi via service
     service:
-      name: "{{ kodi_systemd_service }}"
+      name: "{{ kodi_service }}"
       state: stopped
     tags:
     - configure
 
-- when: "kodi_systemd_service is not defined"
+- when: "kodi_service is not defined"
   block:
   - name: Ensure that Kodi process-checking variables are defined
     assert:
@@ -388,8 +402,8 @@
 
 - name: Start Kodi via service
   service:
-    name: "{{ kodi_systemd_service }}"
+    name: "{{ kodi_service }}"
     state: started
-  when: "kodi_systemd_service is defined"
+  when: "kodi_service is defined"
   tags:
   - configure
