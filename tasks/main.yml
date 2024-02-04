@@ -89,7 +89,7 @@
   - when: "kodi_attempt_start | bool"
     block:
     - name: Start Kodi via service
-      systemd:
+      service:
         name: "{{ kodi_systemd_service }}"
         state: started
       register: kodi_start
@@ -107,7 +107,7 @@
       - get_addons
 
   - name: Stop Kodi via service
-    systemd:
+    service:
       name: "{{ kodi_systemd_service }}"
       state: stopped
     tags:
@@ -387,7 +387,7 @@
   tags: transfer_feeds
 
 - name: Start Kodi via service
-  systemd:
+  service:
     name: "{{ kodi_systemd_service }}"
     state: started
   when: "kodi_systemd_service is defined"
