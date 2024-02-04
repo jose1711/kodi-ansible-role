@@ -15,6 +15,11 @@ def trigger_box_build(config, &block)
 end
 
 Vagrant.configure(2) do |config|
+  # We don't need to sync this folder onto the guest, and disabling the synced
+  # folder prevents Vagrant from bailing out on guests that lack `rsync` (e.g.
+  # LibreELEC).
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+
   config.vm.provider :libvirt do |domain|
     # Listen on all addresses
     domain.graphics_ip = '::'
