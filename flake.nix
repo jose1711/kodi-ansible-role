@@ -34,6 +34,13 @@
       }: {
         devshells.default = {
           commands = [
+            # Local GitHub actions runner.  Run `act -j native` to execute the
+            # `native` job.
+            {
+              category = "dev";
+              package = pkgs.act;
+            }
+
             {
               category = "dev";
               package = pkgs.ansible;
