@@ -22,10 +22,13 @@
       # package, so we have to install `kodi-inputstream-adaptive`.
       # Re `acl`: https://github.com/ansible/ansible/issues/74830#issuecomment-848817825
       raw: |
+        export DEBIAN_FRONTEND=noninteractive
+        echo 'tzdata tzdata/Areas select Europe' | debconf-set-selections || exit
+        echo 'tzdata tzdata/Zones/Europe select Bratislava' | debconf-set-selections || exit
         if command -v mediacenter 1>/dev/null 2>&1; then
-          apt -y update && { apt -y install python3 || apt -y install python; };
+          apt -y update && { apt -y install --no-install-recommends python3 || apt -y install --no-install-recommends python; };
         else
-          apt -y update && { apt -y install python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; };
+          apt -y update && { apt -y install --no-install-recommends python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; };
         fi
       ignore_errors: True
       tags: always

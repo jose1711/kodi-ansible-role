@@ -3,6 +3,8 @@ on:
   pull_request:
   push:
   workflow_dispatch:
+env:
+  DEBIAN_FRONTEND: noninteractive
 jobs:
   native:
     name: Run test playbook
@@ -23,7 +25,12 @@ jobs:
       - name: Install testing dependencies
         run: |
           { apk add --no-cache ansible sudo ; } || :
-          { apt -y update && apt -y install ansible sudo ; } || :
+          {
+               echo 'tzdata tzdata/Areas select Europe' | debconf-set-selections \
+            && echo 'tzdata tzdata/Zones/Europe select Bratislava' | debconf-set-selections \
+            && apt -y update \
+            && apt -y install --no-install-recommends ansible sudo
+          } || :
           { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
       - name: Run test playbook
         run: |
