@@ -158,6 +158,12 @@ Example Playbook
     - { role: jose1711.kodi_ansible_role, kodi_language: en_US }
 ```
 
+Contributing to `jose1711.kodi-ansible-role`
+--------------------------------------------
+
+Please see [`CONTRIBUTING.md`](/CONTRIBUTING.md) for notes on contributing to
+this project.
+
 License
 -------
 
