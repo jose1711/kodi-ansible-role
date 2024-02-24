@@ -63,11 +63,17 @@
 # group is created by the post-installation script from the `udev` package,
 # and the `udev` package is not installed by default in at least some Debian
 # and Ubuntu container images.  So, ensure that the groups are created.
+#
+# Handles both:
+#   1. `"foogroup"`, and
+#   2. `{"name": "foogroup", "gid": 999, "system": False}`
+# Plus degenerate cases of `2` (e.g. no `gid` or `system` attribute specified).
 - name: "Create Kodi groups"
   group:
-    name: "{{ item }}"
+    name: "{{ (item is mapping) | ternary((item.name | default(omit)), item) }}"
     state: present
-    system: True
+    system: "{{ (item is mapping) | ternary((item.system | default(True) | bool), True) }}"
+    gid: "{{ (item is mapping) | ternary((item.gid | default(omit)), omit) }}"
   with_items: "{{ kodi_groups }}"
 
 - name: Create Kodi user
