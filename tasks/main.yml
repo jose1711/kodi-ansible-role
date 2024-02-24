@@ -57,6 +57,19 @@
   - install
   - get_addons
 
+# The default value of `kodi_groups` is `["audio", "video", "input"]`.  On
+# explicitly-supported distributions, all of these groups are usually present
+# on a base/stock installation.  Exception: on Debian and Ubuntu, the `input`
+# group is created by the post-installation script from the `udev` package,
+# and the `udev` package is not installed by default in at least some Debian
+# and Ubuntu container images.  So, ensure that the groups are created.
+- name: "Create Kodi groups"
+  group:
+    name: "{{ item }}"
+    state: present
+    system: True
+  with_items: "{{ kodi_groups }}"
+
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"
