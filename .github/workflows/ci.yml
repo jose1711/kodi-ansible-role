@@ -33,5 +33,8 @@ jobs:
           } || :
           { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
       - name: Run test playbook
+        # Force `kodi_service_enabled` to `false`, as we can't count on being
+        # able to use the distribution's service manager/supervisor (e.g.
+        # OpenRC under Alpine Linux) in a container.
         run: |
-          ansible-playbook -vv --become -c local -i localhost, ./tests/test.yml
+          ansible-playbook -vv --become -c local -i localhost, -e kodi_service_enabled=false ./tests/test.yml
