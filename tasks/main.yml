@@ -78,7 +78,18 @@
   - configure
   - get_addons
 
-- when: "kodi_systemd_service is defined"
+- name: "determine whether to manage Kodi as a service"
+  set_fact:
+    kodi_service_enabled: '{{
+        kodi_service_enabled
+      | default((kodi_service is defined) and (kodi_service is not none) and (kodi_service != omit))
+    }}'
+    kodi_systemd_service_enabled: '{{
+          kodi_systemd_service_enabled
+        | default((kodi_systemd_service is defined) and (kodi_systemd_service is not none) and (kodi_systemd_service != omit))
+    }}'
+
+- when: "kodi_systemd_service_enabled"
   block:
   - name: "Issue warning about variable deprecation"
     debug:
@@ -86,16 +97,17 @@
   - name: "Check that we are not going to overwrite `kodi_service`"
     assert:
       that:
-        - "(kodi_service is not defined) or  (kodi_service == kodi_systemd_service)"
+        - "(kodi_service is not defined) or (kodi_service == kodi_systemd_service)"
       msg: "`kodi_service` and `kodi_systemd_service` have conflicting definitions; please define only `kodi_service`"
   - name: "Set kodi_service variable"
     set_fact:
       kodi_service: "{{ kodi_systemd_service }}"
+      kodi_service_enabled: "{{ kodi_systemd_service_enabled }}"
 
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- when: "kodi_service is defined"
+- when: "kodi_service_enabled | bool"
   block:
   # Ensure the service is started so that Kodi populates the addon database and
   # performs other setup that may be required by addon installation and
@@ -104,7 +116,7 @@
     block:
     - name: Start Kodi via service
       service:
-        name: "{{ kodi_service }}"
+        name: "{{ kodi_service | default(omit) }}"
         state: started
       register: kodi_start
       ignore_errors: True
@@ -122,12 +134,12 @@
 
   - name: Stop Kodi via service
     service:
-      name: "{{ kodi_service }}"
+      name: "{{ kodi_service | default(omit) }}"
       state: stopped
     tags:
     - configure
 
-- when: "kodi_service is not defined"
+- when: "not (kodi_service_enabled | bool)"
   block:
   - name: Ensure that Kodi process-checking variables are defined
     assert:
@@ -402,8 +414,8 @@
 
 - name: Start Kodi via service
   service:
-    name: "{{ kodi_service }}"
+    name: "{{ kodi_service | default(omit) }}"
     state: started
-  when: "kodi_service is defined"
+  when: "kodi_service_enabled | bool"
   tags:
   - configure

@@ -108,7 +108,8 @@ Role Variables
 - `kodi_weather_provider`: Hostname of the weather data provider.  Default: not defined.
 - `kodi_include_default_config`: a boolean indicating whether or not to include the variable definitions from [`vars/default.yml`][].yml).  Default: `False`.
 - `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined.  **This variable is deprecated**; please use `kodi_service` instead.
-- `kodi_service`: the name of the service running Kodi.  Default: not defined, except on Alpine and LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.
+- `kodi_service`: the name of the service running Kodi.  Default: not defined, except on Alpine and LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.  Note that setting this variable to `{{ none }}` or `{{ omit }}` will disable service management even on systems where it would be attempted by default.
+- `kodi_service_enabled`: whether to attempt to manage Kodi via the service specified in `kodi_service`.  By default, `True` by default on systems where `kodi_service` is defined and set to a value other than `{{ omit }}` or `{{ none }}`, and `False` otherwise.
 - `kodi_check_process_cmd`: the command to use for checking whether Kodi is currently running (Kodi must be shut off before changing its configuration).  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_check_process_executable`: the executable to use for running `kodi_check_process_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_query_version_cmd`: the command to use for determining the version of Kodi in use.  This command only runs if `kodi_version` is undefined.  See [the platform-specific variables files](/vars) for the values of this variable.
