@@ -10,4 +10,5 @@ pid="$!"
 echo "$pid"
 
 # Try to disown the process, but do not exit with nonzero status if this fails.
-disown "$pid" 1>/dev/null || :
+# shellcheck disable=SC3044
+disown "$pid" 1>/dev/null 2>&1 || :
