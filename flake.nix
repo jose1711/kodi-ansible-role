@@ -93,6 +93,8 @@
             ];
           };
         in {
+          inherit (config.devShells) default;
+
           rpi4-initrd = rpi4.config.system.build.initialRamdisk;
           rpi4-kernel = rpi4.config.system.build.kernel;
 
