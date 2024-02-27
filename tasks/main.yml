@@ -84,7 +84,7 @@
   user:
     name: "{{ kodi_user }}"
     shell: "{{ kodi_shell }}"
-    groups: "{{ kodi_groups }}"
+    groups: "{{ (kodi_groups | select('mapping') | map(attribute='name') | list) + (kodi_groups | reject('mapping') | list) }}"
     append: True
   when: 'kodi_user_create | default(True) | bool'
   tags:
