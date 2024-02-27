@@ -1,0 +1,22 @@
+packages:
+  - acl
+  - curl
+  - kodi
+  - kodi-gbm
+  - kodi-openrc
+  - openrc
+  - procps-ng
+  - py3-lxml
+  - unzip
+
+# No `/usr/bin/kodi` on Alpine; there is `/usr/bin/kodi-standalone`, but this
+# file attempts to execute `/usr/bin/kodi` :(
+kodi_executable: '/usr/bin/kodi-gbm'
+
+kodi_service: kodi
+
+kodi_check_process_cmd: "ps -U {{ kodi_user }} -o command | grep -q ^/usr/bin/[k]odi-gbm"
+kodi_check_process_executable: "/bin/sh"
+
+kodi_query_version_cmd: "apk list -I kodi | awk '{print $1}' | awk -F- '/^kodi-[[:digit:]]/ { print ($(NF-1)) }'"
+kodi_query_version_executable: "{{ kodi_check_process_executable }}"

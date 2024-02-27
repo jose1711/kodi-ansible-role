@@ -1,1 +1,11 @@
 /.vagrant/
+
+# Vagrant boxes
+*.box
+
+# Disk images
+*.img
+*.qcow2
+
+# libvirt domain log files
+*.log

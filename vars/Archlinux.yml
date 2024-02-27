@@ -1,9 +1,7 @@
 packages:
   - kodi
   - kodi-x11
-  - sqlite3
   - kodi-eventclients
-  - libxml2
   - unzip
   - python-lxml
   - acl

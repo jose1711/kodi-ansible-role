@@ -3,6 +3,8 @@ on:
   pull_request:
   push:
   workflow_dispatch:
+env:
+  DEBIAN_FRONTEND: noninteractive
 jobs:
   native:
     name: Run test playbook
@@ -10,6 +12,7 @@ jobs:
     strategy:
       matrix:
         image:
+          - alpine:3
           - archlinux/archlinux
           - debian:11
           - debian:12
@@ -21,8 +24,17 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install testing dependencies
         run: |
+          { apk add --no-cache ansible sudo ; } || :
+          {
+               echo 'tzdata tzdata/Areas select Europe' | debconf-set-selections \
+            && echo 'tzdata tzdata/Zones/Europe select Bratislava' | debconf-set-selections \
+            && apt -y update \
+            && apt -y install --no-install-recommends ansible sudo
+          } || :
           { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
-          { apt -y update && apt -y install ansible sudo ; } || :
       - name: Run test playbook
+        # Force `kodi_service_enabled` to `false`, as we can't count on being
+        # able to use the distribution's service manager/supervisor (e.g.
+        # OpenRC under Alpine Linux) in a container.
         run: |
-          ansible-playbook -vv --become -c local -i localhost, ./tests/test.yml
+          ansible-playbook -vv --become -c local -i localhost, -e kodi_service_enabled=false ./tests/test.yml

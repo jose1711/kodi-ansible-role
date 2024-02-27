@@ -1,0 +1,89 @@
+  config.ssh.username = 'osmc'
+  config.ssh.password = 'osmc'
+
+  config.vm.boot_timeout = 1800
+
+  # https://raspberrypi.stackexchange.com/questions/117234/how-to-emulate-raspberry-pi-in-qemu
+  # https://blog.grandtrunk.net/2023/03/raspberry-pi-4-emulation-with-qemu/
+  # https://hechao.li/2021/12/20/Boot-Raspberry-Pi-4-Using-uboot-and-Initramfs/
+  # https://stackoverflow.com/questions/46380695/unable-to-add-raspbian-image-to-vagrant-libvirt-virtual-machine
+  config.vm.provider :libvirt do |domain, override|
+    # Default is `kvm`, but we need to support non-native arch.
+    domain.driver = 'qemu'
+
+    # https://github.com/vagrant-libvirt/vagrant-libvirt/issues/966#issuecomment-762308364
+    domain.features = []
+
+    # Otherwise:
+    # > Error while creating domain: Error saving the server: Call to
+    # > virDomainDefineXML failed: unsupported configuration: ps2 is not
+    # > supported by this QEMU binary
+    domain.inputs = []
+
+    domain.cpus = 2
+    domain.memory = 2048
+
+    domain.cpu_mode = 'custom'
+    domain.cpu_model = 'max'
+
+    domain.machine_arch = 'aarch64'
+    domain.machine_type = 'virt'
+
+    # The kernel and initrd have to be readable by the user running the libvirt
+    # daemon.  Create a world-readable temporary directory, copy the kernel and
+    # initrd into it, use these files for `domain.{kernel,initrd}`, and
+    # (finally) clean up after ourselves.
+    tmpdir = nil
+    cleanup = ->(*) do
+      begin
+        FileUtils.remove_entry(tmpdir)
+      rescue => e
+        raise(e) unless (e.is_a?(Errno::ENOENT) || tmpdir.nil?)
+      end
+    end
+
+    # Try to make Ruby's builtin exit handler take care of cleanup; this same
+    # block of code also executes in an `after` trigger defined below.
+    Kernel.at_exit(&cleanup)
+
+    override.trigger.before :all do |t|
+      t.name = 'Install kernel and initrd'
+      t.info = 'Installing the kernel and initrd to a world-readable location'
+      t.ruby do |env, machine|
+        tmpdir = Dir.mktmpdir(%w[vagrant-osmc- -assets])
+
+        # XXX This works:
+        #
+        # > machine.provider_config.foo = "bar"
+        #
+        # This does not:
+        #
+        # > machine.config.vm.provider :libvirt do |domain|
+        # >   domain.foo = "bar"
+        # > end
+        #
+        # Nor does this:
+        #
+        # > override.vm.provider :libvirt do |domain|
+        # >   domain.foo = "bar"
+        # > end
+        #
+        # That is, Vagrant seems to ignore/forget setting values defined using
+        # the latter two approaches, but uses/remembers such settings defined
+        # in the first approach.
+        machine.provider_config.kernel = kernel = File.expand_path('kernel', tmpdir)
+        machine.provider_config.initrd = initrd = File.expand_path('initrd', tmpdir)
+        machine.provider_config.cmd_line = 'rw earlyprintk loglevel=8 console=ttyAMA0,115200n8 init=/usr/sbin/init rootwait rootfstype=ext4 osmcdev=rbp4'
+
+        FileUtils.chmod(0777, tmpdir)
+        FileUtils.cp(File.expand_path('kernel', __dir__), kernel)
+        FileUtils.cp(File.expand_path('initrd', __dir__), initrd)
+      end
+    end
+
+    override.trigger.after :all do |t|
+      t.name = 'Clean up kernel and initrd'
+      t.info = 'Cleaning up the copied kernel and initrd'
+      t.ruby(&cleanup)
+    end
+  end

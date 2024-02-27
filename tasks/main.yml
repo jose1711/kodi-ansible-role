@@ -57,6 +57,25 @@
   - install
   - get_addons
 
+# The default value of `kodi_groups` is `["audio", "video", "input"]`.  On
+# explicitly-supported distributions, all of these groups are usually present
+# on a base/stock installation.  Exception: on Debian and Ubuntu, the `input`
+# group is created by the post-installation script from the `udev` package,
+# and the `udev` package is not installed by default in at least some Debian
+# and Ubuntu container images.  So, ensure that the groups are created.
+#
+# Handles both:
+#   1. `"foogroup"`, and
+#   2. `{"name": "foogroup", "gid": 999, "system": False}`
+# Plus degenerate cases of `2` (e.g. no `gid` or `system` attribute specified).
+- name: "Create Kodi groups"
+  group:
+    name: "{{ (item is mapping) | ternary((item.name | default(omit)), item) }}"
+    state: present
+    system: "{{ (item is mapping) | ternary((item.system | default(True) | bool), True) }}"
+    gid: "{{ (item is mapping) | ternary((item.gid | default(omit)), omit) }}"
+  with_items: "{{ kodi_groups }}"
+
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"
@@ -78,10 +97,36 @@
   - configure
   - get_addons
 
+- name: "determine whether to manage Kodi as a service"
+  set_fact:
+    kodi_service_enabled: '{{
+        kodi_service_enabled
+      | default((kodi_service is defined) and (kodi_service is not none) and (kodi_service != omit))
+    }}'
+    kodi_systemd_service_enabled: '{{
+          kodi_systemd_service_enabled
+        | default((kodi_systemd_service is defined) and (kodi_systemd_service is not none) and (kodi_systemd_service != omit))
+    }}'
+
+- when: "kodi_systemd_service_enabled"
+  block:
+  - name: "Issue warning about variable deprecation"
+    debug:
+      msg: "`kodi_systemd_service` is deprecated; please use `kodi_service` instead"
+  - name: "Check that we are not going to overwrite `kodi_service`"
+    assert:
+      that:
+        - "(kodi_service is not defined) or (kodi_service == kodi_systemd_service)"
+      msg: "`kodi_service` and `kodi_systemd_service` have conflicting definitions; please define only `kodi_service`"
+  - name: "Set kodi_service variable"
+    set_fact:
+      kodi_service: "{{ kodi_systemd_service }}"
+      kodi_service_enabled: "{{ kodi_systemd_service_enabled }}"
+
 # changing Kodi configuration while Kodi is running is
 # not supported so let's make sure it's stopped before we
 # continue
-- when: "kodi_systemd_service is defined"
+- when: "kodi_service_enabled | bool"
   block:
   # Ensure the service is started so that Kodi populates the addon database and
   # performs other setup that may be required by addon installation and
@@ -89,8 +134,8 @@
   - when: "kodi_attempt_start | bool"
     block:
     - name: Start Kodi via service
-      systemd:
-        name: "{{ kodi_systemd_service }}"
+      service:
+        name: "{{ kodi_service | default(omit) }}"
         state: started
       register: kodi_start
       ignore_errors: True
@@ -99,21 +144,21 @@
       - get_addons
 
     - name: Let Kodi run for a bit
-      pause:
-        seconds: "{{ kodi_start_seconds | int }}"
+      wait_for:
+        timeout: "{{ kodi_start_seconds | default(10) | int }}"
       when: 'kodi_start is changed'
       tags:
       - configure
       - get_addons
 
   - name: Stop Kodi via service
-    systemd:
-      name: "{{ kodi_systemd_service }}"
+    service:
+      name: "{{ kodi_service | default(omit) }}"
       state: stopped
     tags:
     - configure
 
-- when: "kodi_systemd_service is not defined"
+- when: "not (kodi_service_enabled | bool)"
   block:
   - name: Ensure that Kodi process-checking variables are defined
     assert:
@@ -153,8 +198,8 @@
       check_mode: no
 
     - name: Let Kodi run for a bit
-      pause:
-        seconds: "{{ kodi_start_seconds | default(10) | int }}"
+      wait_for:
+        timeout: "{{ kodi_start_seconds | default(10) | int }}"
       tags:
       - configure
       - get_addons
@@ -387,9 +432,9 @@
   tags: transfer_feeds
 
 - name: Start Kodi via service
-  systemd:
-    name: "{{ kodi_systemd_service }}"
+  service:
+    name: "{{ kodi_service | default(omit) }}"
     state: started
-  when: "kodi_systemd_service is defined"
+  when: "kodi_service_enabled | bool"
   tags:
   - configure

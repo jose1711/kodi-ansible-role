@@ -1,0 +1,66 @@
+#!/bin/sh
+
+set -eu
+
+box="${1:-OSMC_TGT_rbp4_20240205.box}"
+shift 2>/dev/null || :
+
+vagrantfile_add_rel="${0%/*}/../vagrant/share/osmc/Vagrantfile"
+vagrantfile_add="$({ realpath "$vagrantfile_add_rel" || readlink -f "$vagrantfile_add_rel" ; } 2>/dev/null)"
+
+date="${box##*_}"
+date="${date%%.*}"
+date="${date:-20240205}"
+
+download_url=https://ftp.fau.de/osmc/osmc/download
+export CREATE_BOX_IMG_ARCHIVE_BASEURL="${CREATE_BOX_IMG_ARCHIVE_BASEURL:-"${download_url}/installers/diskimages"}"
+
+# 1. Create a partition, format it `ext4`, and mount it at `/`.
+# 2. Download and extract the OSMC root filesystem onto the newly-created root
+#    partition.
+# 3. Add the Vagrant insecure (bootstrap) public keys to the `root` user's
+#    authorized keys file.
+# 4. Fix the upstream `90-rpi-add-serial.rules` udev rules file; without this,
+#    udev complains about "invalid substitution type" due to the use of
+#    unescaped `$` uses in shell commands (see, e.g.,
+#    https://askubuntu.com/questions/1420933/invalid-value-for-import-invalid-substitution-type)
+# 5. Remove a shell profile script that runs `apt-get update` upon login (gives
+#    logins a speed boost).
+# 6. Remove the `udisks-glue` service ("mount disks automatically with
+#    standby") from `multi-user.target.wants` so that it does not start
+#    automatically; this service always fails at the `ExecStartPre` stage, and
+#    we don't need automatic disk mounting anyway.
+# 7. Build the kernel and initrd.
+exec "${0%/*}/create-box" "$box" "${box%.box}.img" "$vagrantfile_add" "$@" <<GUESTFISH_PROGRAM
+run
+
+part-disk /dev/sda mbr
+mkfs ext4 /dev/sda1 label:osmc
+mount /dev/sda1 /
+
+! curl -fsSLo filesystem.tar.xz ${download_url}/filesystems/osmc-rbp4-filesystem-${date}.tar.xz
+tar-in filesystem.tar.xz / compress:xz
+! rm -f filesystem.tar.xz
+
+mkdir-p /home/osmc/.ssh
+chown 1000 1000 /home/osmc/.ssh
+chmod 0700 /home/osmc/.ssh
+
+upload @vagrant_keys@ /home/osmc/.ssh/authorized_keys
+chmod 0600 /home/osmc/.ssh/authorized_keys
+chown 1000 1000 /home/osmc/.ssh/authorized_keys
+
+mkdir-p /etc/udev/rules.d
+upload @toplevel@/vagrant/share/osmc/90-rpi-add-serial.rules /etc/udev/rules.d/90-rpi-add-serial.rules
+chmod 0644 /etc/udev/rules.d/90-rpi-add-serial.rules
+chown 0 0 /etc/udev/rules.d/90-rpi-add-serial.rules
+
+rm-f /etc/profile.d/101-apt-update.sh
+
+rm-f /etc/systemd/system/multi-user.target.wants/udisks-glue.service
+
+unmount /
+
+! cp -f "\$(nix --extra-experimental-features 'flakes nix-command' build -L --no-link --print-out-paths '.#rpi4-kernel')/Image" kernel
+! cp -f "\$(nix --extra-experimental-features 'flakes nix-command' build -L --no-link --print-out-paths '.#rpi4-initrd')/initrd" initrd
+GUESTFISH_PROGRAM

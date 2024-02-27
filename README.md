@@ -79,7 +79,7 @@ Role Variables
 [`vars/default.yml`]: vars/default.yml
 
 - `kodi_user`: the user account used for running the Kodi service on the target machine.  Default: `"kodi"`.
-- `kodi_groups`: if `kodi_user` is created by this role, it will be added to these groups.  Default: `["audio", "video", "input"]`.
+- `kodi_groups`: if `kodi_user` is created by this role, it will be added to these groups.  Entries in the list may be (a) strings (`"somegroup"`) or (b) dictionaries of the form `{"name": "someuser", "gid": 11111, "system": False}`, where `name` is the group name, `gid` is the GID, and `system` is a boolean specifying whether the group is a so-called "system" group; see `ansible-doc group` for more on the meaning of these parameters.  Note that, in the dictionary form, `gid` and `system` may be omitted.  Default: `["audio", "video", "input"]`.
 - `kodi_shell`: if `kodi_user` is created by this role, it will use this value as its login shell.  Default: `"/bin/bash"`.
 - `kodi_user_create`: whether to create the user account specified in `kodi_user`.  Default: `True` (except on LibreELEC and OSMC, where it is set to `False`).
 - `kodi_data_dir`: path to the directory storing Kodi data (addons, user data, etc.). Default: `~{{ kodi_user }}/.kodi` (the `.kodi` subdirectory of the home directory of the `kodi_user` user).
@@ -107,7 +107,9 @@ Role Variables
 - `kodi_subtitles_languages`: Comma-separated list of subtitle languages.  Default: not defined.
 - `kodi_weather_provider`: Hostname of the weather data provider.  Default: not defined.
 - `kodi_include_default_config`: a boolean indicating whether or not to include the variable definitions from [`vars/default.yml`][].yml).  Default: `False`.
-- `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined, except on LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.
+- `kodi_systemd_service`: the name of the systemd service running Kodi.  Default: not defined.  **This variable is deprecated**; please use `kodi_service` instead.
+- `kodi_service`: the name of the service running Kodi.  Default: not defined, except on Alpine and LibreELEC where it is set to `kodi` and on OSMC where it is set to `mediacenter`.  Note that setting this variable to `{{ none }}` or `{{ omit }}` will disable service management even on systems where it would be attempted by default.
+- `kodi_service_enabled`: whether to attempt to manage Kodi via the service specified in `kodi_service`.  By default, `True` by default on systems where `kodi_service` is defined and set to a value other than `{{ omit }}` or `{{ none }}`, and `False` otherwise.
 - `kodi_check_process_cmd`: the command to use for checking whether Kodi is currently running (Kodi must be shut off before changing its configuration).  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_check_process_executable`: the executable to use for running `kodi_check_process_cmd`.  See [the platform-specific variables files](/vars) for the values of this variable.
 - `kodi_query_version_cmd`: the command to use for determining the version of Kodi in use.  This command only runs if `kodi_version` is undefined.  See [the platform-specific variables files](/vars) for the values of this variable.
@@ -155,6 +157,12 @@ Example Playbook
   roles:
     - { role: jose1711.kodi_ansible_role, kodi_language: en_US }
 ```
+
+Contributing to `jose1711.kodi-ansible-role`
+--------------------------------------------
+
+Please see [`CONTRIBUTING.md`](/CONTRIBUTING.md) for notes on contributing to
+this project.
 
 License
 -------
