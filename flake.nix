@@ -32,6 +32,9 @@
         system,
         ...
       }: {
+        # `nix run '.#' -- <devshell-command>`
+        apps.default = config.devShells.default.flakeApp;
+
         devshells.default = {
           commands = [
             # Local GitHub actions runner.  Run `act -j native` to execute the
