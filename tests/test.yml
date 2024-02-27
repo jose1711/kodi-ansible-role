@@ -39,6 +39,13 @@
     - role: "{{ playbook_dir | dirname }}"
       vars:
         kodi_attempt_start: True
+        kodi_groups:
+          - audio
+          - video
+          - input
+          - name: custom-group-for-testing
+            system: False
+            gid: 12345
         kodi_language: 'en_US'
         kodi_locale_country: 'United States'
         kodi_locale_timezone_country: 'United States'
