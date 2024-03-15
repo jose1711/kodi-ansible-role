@@ -29,3 +29,9 @@ This file lists all notable changes to this project.
 - Use `root` as `kodi_user` on LibreELEC (#8).
 - Use the `wait_for` module instead of the `pause` module; now it should be
   possible to apply this role under the `free` strategy (#8).
+- Gracefully handle the absence of one or more prerequisites of the Ansible
+  `group` module (e.g. the absence of the `groupadd` command on LibreELEC)
+  (#10).
+- Unpack "complex" group specifications (dictionaries) when constructing the
+  `groups` attribute of the Ansible `user` task that creates `kodi_user`; this
+  task expects a list of strings specifying group names (#10).

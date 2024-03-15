@@ -75,12 +75,16 @@
     system: "{{ (item is mapping) | ternary((item.system | default(True) | bool), True) }}"
     gid: "{{ (item is mapping) | ternary((item.gid | default(omit)), omit) }}"
   with_items: "{{ kodi_groups }}"
+  # Some targets (e.g. LibreELEC) do not have `groupmod` and/or other
+  # dependencies of the `group` module.  Ignore errors; if any entries in
+  # `kodi_groups` are absent, the "Create Kodi user" task will fail.
+  ignore_errors: True
 
 - name: Create Kodi user
   user:
     name: "{{ kodi_user }}"
     shell: "{{ kodi_shell }}"
-    groups: "{{ kodi_groups }}"
+    groups: "{{ (kodi_groups | select('mapping') | map(attribute='name') | list) + (kodi_groups | reject('mapping') | list) }}"
     append: True
   when: 'kodi_user_create | default(True) | bool'
   tags:
