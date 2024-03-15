@@ -21,7 +21,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install testing dependencies
         run: |
           { apk add --no-cache ansible sudo ; } || :
@@ -38,3 +38,15 @@ jobs:
         # OpenRC under Alpine Linux) in a container.
         run: |
           ansible-playbook -vv --become -c local -i localhost, -e kodi_service_enabled=false ./tests/test.yml
+  nix:
+    name: Run Nix actions
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v8
+      - name: Set up Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v3
+      - name: Run Nix flake checks
+        run: |
+          nix flake check -L
