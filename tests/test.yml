@@ -5,21 +5,21 @@
   gather_facts: False
   tasks:
     - name: 'test | install dependencies with apk'
+      # NOTE do not rely on `kodi_extra_packages` to install
+      # `kodi-inputstream-adaptive`, as we have to enable an additional
+      # repository (at least for now) and the Ansible `package` module that
+      # powers `kodi_extra_packages` installation does not support this.
       raw: 'apk add -U python3 && apk add -U kodi-inputstream-adaptive --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing/'
       ignore_errors: True
       tags: always
 
     - name: 'test | install python with pacman'
       # https://wiki.archlinux.org/title/Pacman/Package_signing#Upgrade_system_regularly
-      # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
-      # package, so we have to install `kodi-addon-inputstream-adaptive`.
-      raw: 'pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S python kodi-addon-inputstream-adaptive'
+      raw: 'pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S python'
       ignore_errors: True
       tags: always
 
     - name: 'test | install python and other dependencies with apt'
-      # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
-      # package, so we have to install `kodi-inputstream-adaptive`.
       # Re `acl`: https://github.com/ansible/ansible/issues/74830#issuecomment-848817825
       raw: |
         export DEBIAN_FRONTEND=noninteractive
@@ -28,7 +28,7 @@
         if command -v mediacenter 1>/dev/null 2>&1; then
           apt -y update && { apt -y install --no-install-recommends python3 || apt -y install --no-install-recommends python; };
         else
-          apt -y update && { apt -y install --no-install-recommends python3 kodi-inputstream-adaptive || apt -y install python kodi-inputstream-adaptive; };
+          apt -y update && { apt -y install --no-install-recommends python3 || apt -y install python; };
         fi
       ignore_errors: True
       tags: always
@@ -62,6 +62,23 @@
           kodi_repositories + [("libreelec_cached=https://addons.libreelec.tv/" ~ ansible_distribution_major_version ~ ".0.0/Generic/x86_64/addons.xml.gz")]
         }}'
       when: 'ansible_distribution == "LibreELEC"'
+
+    # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
+    # package, so we have to install `kodi-addon-inputstream-adaptive` on Arch
+    # Linux, and `kodi-inputstream-adaptive` elsewhere.
+    - name: 'test | define extra packages (Arch Linux)'
+      set_fact:
+        kodi_extra_packages:
+          - kodi-addon-inputstream-adaptive
+      when: 'ansible_distribution == "Archlinux"'
+
+    # LibreELEC and OSMC do not need additional packages (and, in LibreELEC's
+    # case, cannot install additional packages anyway).
+    - name: 'test | define extra packages (other)'
+      set_fact:
+        kodi_extra_packages:
+          - kodi-inputstream-adaptive
+      when: 'ansible_distribution not in ["Archlinux", "LibreELEC", "OSMC"]'
   roles:
     - role: "{{ playbook_dir | dirname }}"
       vars:

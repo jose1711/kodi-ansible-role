@@ -10,6 +10,10 @@ kodi_user_create: True
 
 kodi_data_dir: '~{{ kodi_user }}/.kodi'
 
+# Extra packages to install along with Kodi.  Useful for installing addons that
+# have native code, like `inputstream.adaptive`.
+kodi_extra_packages: []
+
 kodi_repositories: []
 
 # Enable all repositories in `kodi_repositories`
