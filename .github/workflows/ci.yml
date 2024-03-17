@@ -17,7 +17,9 @@ jobs:
           - debian:11
           - debian:12
           - ubuntu:22.04
-          - ubuntu:23.04
+          # XXX addon installation is currently broken in Ubuntu 23.04 due to
+          # issues upstream of this role.  Omit from the workflow for now.
+          #- ubuntu:23.04
     container:
       image: ${{ matrix.image }}
     steps:

@@ -47,6 +47,11 @@ Vagrant.configure(2) do |config|
 
   config.vm.define :ubuntu2304 do |ubuntu2304|
     ubuntu2304.vm.box = 'generic/ubuntu2304'
+
+    # XXX addon installation is currently broken in Ubuntu 23.04 due to issues
+    # upstream of this role.  Do not bring up this machine by default.
+    ubuntu2304.autostart = false
+    ubuntu2304.primary = false
   end
 
   config.vm.define :libreelec do |libreelec|
