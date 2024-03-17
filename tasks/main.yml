@@ -16,8 +16,18 @@
   tags:
   - always
 
-# Setup apt repo (Ubuntu only)"
-- when: "ansible_distribution == 'Ubuntu'"
+# Setup apt repo (Pre-Lunar-Lobster-Ubuntu only)
+#
+# On Lunar Lobster, PPA does not provide anything other than Kodi.  On
+# earlier Ubuntu releases, it provides many Kodi addons in addition to Kodi
+# itself.
+#
+# XXX the PPA appears to be unmaintained:
+# https://forum.kodi.tv/showthread.php?tid=374957&pid=3171140#pid3171140
+# https://forum.kodi.tv/showthread.php?tid=375305&pid=3174722#pid3174722
+- when:
+  - "ansible_distribution == 'Ubuntu'"
+  - "ansible_distribution_major_version is version_compare('23', '<')"
   block:
   - name: Create apt trusted keys drop-in directory
     file:
