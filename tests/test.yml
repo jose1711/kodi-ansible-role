@@ -40,7 +40,7 @@
     # so that we can extend it with the LibreELEC repository for LibreELEC
     # hosts only.
     kodi_repositories:
-      - 'official_cached=https://mirrors.kodi.tv/addons/{{ (ansible_distribution == "Ubuntu") | ternary("matrix", "nexus") }}/addons.xml.gz'
+      - 'official_cached=https://mirrors.kodi.tv/addons/{{ kodi_codename }}/addons.xml.gz'
       - 'jellyfin_cached=https://repo.jellyfin.org/releases/client/kodi/addons.xml'
       - 'sandmann79_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages/addons.xml'
       - 'sandmann79_py3_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml'
