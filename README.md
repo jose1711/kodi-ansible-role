@@ -125,6 +125,19 @@ Role Variables
 - `kodi_stop_seconds`: number of seconds to wait before attempting to stop an active Kodi process when `kodi_attempt_stop` is enabled.  Default: `30`.
 - `kodi_version`: the version of Kodi in use.  Default: determined by running `kodi_query_version_cmd`.
 
+Role Facts
+----------
+
+This role sets several facts on target machines that you may use in your own
+code:
+
+- `kodi_version`: the version of Kodi, as obtained with
+  `kodi_query_version_cmd`.
+- `kodi_codename`: the [Kodi codename](https://kodi.wiki/view/Codename_history)
+  as a lowercase string (for instance, `"nexus"`).  This may be helpful in
+  targeting Kodi-release-specific addon repositories (for instance, the core
+  Kodi addon repository embeds the Kodi codename in the URL).
+
 Installing Addons
 -----------------
 

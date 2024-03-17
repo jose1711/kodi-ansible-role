@@ -291,26 +291,18 @@
     tags:
     - configure
 
-- when: 'kodi_version is not defined'
-  block:
-  - name: Query Kodi (major) version
-    shell:
-      cmd: "{{ kodi_query_version_cmd | mandatory }}"
-      executable: "{{ kodi_query_version_executable | mandatory }}"
-    register: kodi_query_version_result
-    check_mode: no
-    tags:
-    - get_addons
-
-  - name: Set Kodi version as ansible fact
-    set_fact:
-      kodi_version: "{{ kodi_query_version_result.stdout }}"
-    tags:
-    - get_addons
+- name: 'Import Kodi fact tasks'
+  import_tasks: 'facts.yml'
 
 - name: Show Kodi version
   debug:
     msg: "kodi version: {{ kodi_version }}"
+  tags:
+  - get_addons
+
+- name: Show Kodi codename
+  debug:
+    msg: "kodi codename: {{ kodi_codename }}"
   tags:
   - get_addons
 
