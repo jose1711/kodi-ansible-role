@@ -39,3 +39,5 @@ This file lists all notable changes to this project.
 - Unpack "complex" group specifications (dictionaries) when constructing the
   `groups` attribute of the Ansible `user` task that creates `kodi_user`; this
   task expects a list of strings specifying group names (#10).
+- Omit `psmisc` from `vagrant-libvirt-create-box`'s dependency list when
+  running on Darwin, where `psmisc` is not available (#11).

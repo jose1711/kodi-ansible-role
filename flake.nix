@@ -103,7 +103,17 @@
 
           # From the `vagrant-libvirt` project.  Patched to permit injecting
           # additional files into the generated Vagrant box archive.
-          vagrant-libvirt-create-box =
+          vagrant-libvirt-create-box = let
+            deps = with pkgs;
+              [
+                coreutils
+                gawk
+                gnutar
+                pigz
+                qemu
+              ]
+              ++ (lib.optional (!stdenv.isDarwin) psmisc);
+          in
             pkgs.runCommand "vagrant-libvirt-create-box" {
               src = pkgs.fetchurl {
                 url = "https://raw.githubusercontent.com/vagrant-libvirt/vagrant-libvirt/main/tools/create_box.sh";
@@ -126,7 +136,7 @@
                 s/\([[:space:]]\+\)|\([[:space:]]\+\)/\1"$@" |\2/
                 s/^/argc="$#"; if [ "$argc" -ge 3 ]; then shift 3; elif [ "$argc" -eq 2 ]; then shift 2; else shift 1; fi; /
               }' "$script"
-              wrapProgram "$script" --prefix PATH : ${lib.makeBinPath (with pkgs; [coreutils gawk gnutar pigz psmisc qemu])}
+              wrapProgram "$script" --prefix PATH : ${lib.makeBinPath deps}
             '';
         };
 
