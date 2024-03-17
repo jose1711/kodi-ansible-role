@@ -22,7 +22,7 @@ export CREATE_BOX_IMG_ARCHIVE_BASEURL="${CREATE_BOX_IMG_ARCHIVE_BASEURL:-"${down
 #    authorized keys file.
 # 4. Fix the upstream `90-rpi-add-serial.rules` udev rules file; without this,
 #    udev complains about "invalid substitution type" due to the use of
-#    unescaped `$` uses in shell commands (see, e.g.,
+#    unescaped `$` characters in shell commands (see, e.g.,
 #    https://askubuntu.com/questions/1420933/invalid-value-for-import-invalid-substitution-type)
 # 5. Remove a shell profile script that runs `apt-get update` upon login (gives
 #    logins a speed boost).

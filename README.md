@@ -88,6 +88,7 @@ Role Variables
 - `kodi_master_data_dir`: path to the directory storing Kodi data (addons, user data, etc.) on the `kodi_master_installation` host. Default: `~{{ kodi_master_kodi_user }}/.kodi` (the `.kodi` subdirectory of the home directory of the `kodi_user` user).
 - `kodi_copy_favourites`: copy `favourites.xml` from the `kodi_master_installation` host to the target host.  Default: `False`.
 - `kodi_copy_feeds`: copy RSS feeds from the `kodi_master_installation` host to the target host.  Default: `False`.
+- `kodi_extra_packages`: additional packages to install along with Kodi and its dependencies.  Useful for installing Kodi addons with native extensions, like `inputstream.adaptive`.  Default: `[]`.
 - `kodi_repositories`: a list of strings of the form `<repository-name>=<repository-url>`, where `repository-name` is an arbitrary identifier and `repository-url` is the URL to a Kodi repository `addons.xml` file.  Default: `[]`.
 - `kodi_enabled_repositories`: a list of repository name strings.  Each element should correspond to the `repository-name` part of the `<repository-name>=<repository-url>` entries in `kodi_repositories`.  Addons in this repository will be available for installation via specifying their names in `kodi_addons`.  Default: all repository names in `kodi_repositories`.
 - `kodi_addons`: a list of addons to install (if necessary) and enable.  Each entry can be an addon name (e.g. `plugin.video.beepboop`) or an `<repository-addon-name>=<addon-url>` pair, `<repository-addon-name>` is the name of a repository addon (`repository.foo.bar`) and `<addon-url>` is the URL of the ZIP archive defining the addon.  In the latter case, the addon ZIP will be fetched and extracted to the named path under `{{ kodi_data_dir }}/addons`.  Default: `[]`.
@@ -123,6 +124,19 @@ Role Variables
 - `kodi_attempt_stop`: whether to attempt to stop the Kodi if it is running.  If this is false, and Kodi is running, then this role will exit with an error. Only applies when `kodi_systemd_service` is not defined.  Default: the value of `kodi_attempt_start`.
 - `kodi_stop_seconds`: number of seconds to wait before attempting to stop an active Kodi process when `kodi_attempt_stop` is enabled.  Default: `30`.
 - `kodi_version`: the version of Kodi in use.  Default: determined by running `kodi_query_version_cmd`.
+
+Role Facts
+----------
+
+This role sets several facts on target machines that you may use in your own
+code:
+
+- `kodi_version`: the version of Kodi, as obtained with
+  `kodi_query_version_cmd`.
+- `kodi_codename`: the [Kodi codename](https://kodi.wiki/view/Codename_history)
+  as a lowercase string (for instance, `"nexus"`).  This may be helpful in
+  targeting Kodi-release-specific addon repositories (for instance, the core
+  Kodi addon repository embeds the Kodi codename in the URL).
 
 Installing Addons
 -----------------

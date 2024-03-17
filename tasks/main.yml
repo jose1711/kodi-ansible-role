@@ -16,8 +16,18 @@
   tags:
   - always
 
-# Setup apt repo (Ubuntu only)"
-- when: "ansible_distribution == 'Ubuntu'"
+# Setup apt repo (Pre-Lunar-Lobster-Ubuntu only)
+#
+# On Lunar Lobster, PPA does not provide anything other than Kodi.  On
+# earlier Ubuntu releases, it provides many Kodi addons in addition to Kodi
+# itself.
+#
+# XXX the PPA appears to be unmaintained:
+# https://forum.kodi.tv/showthread.php?tid=374957&pid=3171140#pid3171140
+# https://forum.kodi.tv/showthread.php?tid=375305&pid=3174722#pid3174722
+- when:
+  - "ansible_distribution == 'Ubuntu'"
+  - "ansible_distribution_major_version is version_compare('23', '<')"
   block:
   - name: Create apt trusted keys drop-in directory
     file:
@@ -51,8 +61,9 @@
 
 - name: Install Kodi and related apps
   package:
-    name: "{{ packages | default([]) }}"
-  when: "(packages | default([]) | length) > 0"
+    name: "{{ (packages | default([])) + (kodi_extra_packages | default([])) }}"
+    state: present
+  when: "(((packages | default([])) + (kodi_extra_packages | default([]))) | length) > 0"
   tags:
   - install
   - get_addons
@@ -195,7 +206,8 @@
       register: kodi_start
       become_user: "{{ kodi_user }}"
       become: True
-      when: "(kodi_running.rc | default(0)) != 0"
+      timeout: "{{ kodi_start_seconds | default(10) | int }}"
+      ignore_errors: True
       tags:
       - configure
       - get_addons
@@ -204,6 +216,7 @@
     - name: Let Kodi run for a bit
       wait_for:
         timeout: "{{ kodi_start_seconds | default(10) | int }}"
+      when: 'kodi_start is success'
       tags:
       - configure
       - get_addons
@@ -280,26 +293,18 @@
     tags:
     - configure
 
-- when: 'kodi_version is not defined'
-  block:
-  - name: Query Kodi (major) version
-    shell:
-      cmd: "{{ kodi_query_version_cmd | mandatory }}"
-      executable: "{{ kodi_query_version_executable | mandatory }}"
-    register: kodi_query_version_result
-    check_mode: no
-    tags:
-    - get_addons
-
-  - name: Set Kodi version as ansible fact
-    set_fact:
-      kodi_version: "{{ kodi_query_version_result.stdout }}"
-    tags:
-    - get_addons
+- name: 'Import Kodi fact tasks'
+  import_tasks: 'facts.yml'
 
 - name: Show Kodi version
   debug:
     msg: "kodi version: {{ kodi_version }}"
+  tags:
+  - get_addons
+
+- name: Show Kodi codename
+  debug:
+    msg: "kodi codename: {{ kodi_codename }}"
   tags:
   - get_addons
 

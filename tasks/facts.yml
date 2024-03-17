@@ -1,0 +1,44 @@
+- when: 'kodi_version is not defined'
+  block:
+  - name: Query Kodi (major) version
+    shell:
+      cmd: "{{ kodi_query_version_cmd | mandatory }}"
+      executable: "{{ kodi_query_version_executable | mandatory }}"
+    register: kodi_query_version_result
+    check_mode: no
+    tags:
+    - get_addons
+
+- name: Set Kodi version as Ansible fact
+  set_fact:
+    kodi_version: "{{ kodi_version | default(kodi_query_version_result.stdout) }}"
+  tags:
+  - get_addons
+
+- name: Validate Kodi version
+  assert:
+    that:
+      - "(kodi_version | default('')) is version('10', '>=')"
+    fail_msg: "Kodi version '{{ kodi_version | default('<unset>')}}' is not a valid version string or is an unsupported Kodi version"
+    success_msg: "Kodi version '{{ kodi_version | default('<unset>')}}' is a valid version string and is a supported Kodi version"
+
+- name: Set Kodi codename as Ansible fact
+  set_fact:
+    kodi_codename: "{{
+      {
+        '10': 'dharma',
+        '11': 'eden',
+        '12': 'frodo',
+        '13': 'gotham',
+        '14': 'helix',
+        '15': 'isengard',
+        '16': 'jarvis',
+        '17': 'krypton',
+        '18': 'leia',
+        '19': 'matrix',
+        '20': 'nexus',
+        '21': 'omega',
+      }[(kodi_version | regex_replace('\\..$', ''))] | default('nexus')
+    }}"
+  tags:
+  - get_addons

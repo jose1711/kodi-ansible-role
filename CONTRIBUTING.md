@@ -43,7 +43,7 @@ of this writing, those distributions are:
 3. Debian 11 (bullseye)
 4. Debian 12 (bookworm)
 5. Ubuntu 22.04 LTS (Jammy Jellyfish)
-6. Ubuntu 23.04 LTS (Lunar Lobster)
+6. Ubuntu 23.04 LTS (Lunar Lobster)[^lunar-lobster-disabled]
 7. LibreELEC 11.0.6
 8. OSMC 20240205
 
@@ -164,7 +164,7 @@ Ansible role to containers based upon the following images:
 3. `debian:11`
 4. `debian:12`
 5. `ubuntu:22.04`
-6. `ubuntu:23.04`
+6. `ubuntu:23.04`[^lunar-lobster-disabled]
 
 Please ensure that the workflow succeeds when run against your branch.
 
@@ -186,3 +186,9 @@ This will run the `native` job from [`.github/workflows/ci.yml`][].
 > images in [`.github/workflows/ci.yml`][], and, if necessary, update
 > [`tests/test.yml`][] to install Ansible's dependencies on containers using
 > this image.  Additionally, please add the new image to the list above.
+
+[^lunar-lobster-disabled]: Note that Ubuntu 23.04 is currently disabled by
+                           default in the Vagrantfile and omitted from the
+                           GitHub Actions job matrix due to upstream issues
+                           that prevent automatic installation of certain
+                           addons.

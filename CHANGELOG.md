@@ -6,6 +6,10 @@ This file lists all notable changes to this project.
 
 ### Added
 
+- Set the Ansible fact `kodi_codename` specifying the [Kodi
+  codename](https://kodi.wiki/view/Codename_history) as a lowercase string.
+- Support for installing additional packages by specifying them in
+  `kodi_extra_packages`.
 - Support for Alpine Linux (#8).
 - Project contribution guide (#8).
 - Support `system` boolean and `gid` numeric attributes in `kodi_groups`
