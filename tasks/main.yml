@@ -206,7 +206,8 @@
       register: kodi_start
       become_user: "{{ kodi_user }}"
       become: True
-      when: "(kodi_running.rc | default(0)) != 0"
+      timeout: "{{ kodi_start_seconds | default(10) | int }}"
+      ignore_errors: True
       tags:
       - configure
       - get_addons
@@ -215,6 +216,7 @@
     - name: Let Kodi run for a bit
       wait_for:
         timeout: "{{ kodi_start_seconds | default(10) | int }}"
+      when: 'kodi_start is success'
       tags:
       - configure
       - get_addons

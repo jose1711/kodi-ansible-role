@@ -4,11 +4,26 @@ PS4='+ ${BASH_SOURCE:-${0}}@${LINENO:-0}${FUNCNAME:+#${FUNCNAME}()}: '
 
 set -eu
 
-"${KODI_EXECUTABLE:-kodi}" 1>/dev/null &
+resolve_command() {
+  command -v "${1?}" 2>/dev/null || command -v -p "${1?}" 2>/dev/null
+}
 
-pid="$!"
-echo "$pid"
+if [ -z "${KODI_EXECUTABLE:-}" ]; then
+  if ! KODI_EXECUTABLE="$(resolve_command kodi-standalone)" || [ -z "${KODI_EXECUTABLE:-}" ]; then
+    if ! KODI_EXECUTABLE="$(resolve_command kodi)" || [ -z "${KODI_EXECUTABLE:-}" ]; then
+      KODI_EXECUTABLE=kodi
+    fi
+  else
+    KODI_OPTIONS="${KODI_OPTIONS:-'--debug'}"
+  fi
+fi
 
-# Try to disown the process, but do not exit with nonzero status if this fails.
-# shellcheck disable=SC3044
-disown "$pid" 1>/dev/null 2>&1 || :
+KODI_OPTIONS="${KODI_OPTIONS:-'--standalone --debug'}"
+
+# Write our PID to standard output for Ansible to collect.
+echo "$$"
+
+# NOTE that the word-splitting of `KODI_OPTIONS` is deliberate, so tell
+# shellcheck to pipe down.
+# shellcheck disable=SC2086
+exec "$KODI_EXECUTABLE" $KODI_OPTIONS
