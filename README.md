@@ -1,7 +1,7 @@
 kodi_ansible_role
 =================
 
-![CI Status](https://github.com/jose1711/kodi-ansible-role/actions/workflows/ci.yml/badge.svg?event=push)
+[![CI Status](https://github.com/jose1711/kodi-ansible-role/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/jose1711/kodi-ansible-role/actions)
 
 Ansible role that installs and configures Kodi on:
  - ArchLinux
