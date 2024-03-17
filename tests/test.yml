@@ -79,6 +79,11 @@
         kodi_extra_packages:
           - kodi-inputstream-adaptive
       when: 'ansible_distribution not in ["Archlinux", "LibreELEC", "OSMC"]'
+
+    - name: 'test | add xvfb to extra packages for Debian and Ubuntu hosts'
+      set_fact:
+        kodi_extra_packages: '{{ (kodi_extra_packages | default([])) + ["xvfb"] }}'
+      when: 'ansible_distribution in ["Debian", "Ubuntu"]'
   roles:
     - role: "{{ playbook_dir | dirname }}"
       vars:

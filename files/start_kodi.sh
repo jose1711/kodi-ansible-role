@@ -23,7 +23,17 @@ KODI_OPTIONS="${KODI_OPTIONS:-'--standalone --debug'}"
 # Write our PID to standard output for Ansible to collect.
 echo "$$"
 
-# NOTE that the word-splitting of `KODI_OPTIONS` is deliberate, so tell
+# Try to run Kodi under an X server; this may prevent early bailout due to
+# failure creating the Kodi GUI.
+#
+# NOTE that xvfb-run appears to be Debian/Ubuntu specific.
+#
+# NOTE also that the word-splitting of `KODI_OPTIONS` is deliberate, so tell
 # shellcheck to pipe down.
+#
 # shellcheck disable=SC2086
-exec "$KODI_EXECUTABLE" $KODI_OPTIONS
+if xvfb_run="$(resolve_command xvfb-run)" && [ -n "${xvfb_run:-}" ]; then
+  exec "$xvfb_run" -e /tmp/xvfb.out "$KODI_EXECUTABLE" $KODI_OPTIONS 1>/dev/null
+else
+  exec "$KODI_EXECUTABLE" $KODI_OPTIONS
+fi
