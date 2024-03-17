@@ -35,6 +35,33 @@
 
 - hosts: all
   become: True
+  vars:
+    # Define this structure here, rather than in the `role` application stanza,
+    # so that we can extend it with the LibreELEC repository for LibreELEC
+    # hosts only.
+    kodi_repositories:
+      - 'official_cached=https://mirrors.kodi.tv/addons/{{ (ansible_distribution == "Ubuntu") | ternary("matrix", "nexus") }}/addons.xml.gz'
+      - 'jellyfin_cached=https://repo.jellyfin.org/releases/client/kodi/addons.xml'
+      - 'sandmann79_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages/addons.xml'
+      - 'sandmann79_py3_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml'
+  pre_tasks:
+    # The LibreELEC repository used to appear statically in the main
+    # `kodi_repositories` definition, but LibreELEC does aggressive
+    # rate-limiting on their repository, causing this playbook to fail from
+    # connection and/or HTTP errors.
+    #
+    # Reference for LibreELEC repository rate-limiting:
+    # https://forum.libreelec.tv/thread/26597-add-on-repository-problems-2024-03/?pageNo=1
+    #
+    # Note that LibreELEC appears to namespace addons under the path
+    # `<LibreELEC-major-version>.0.0`; for instance, the addon repository URL
+    # for LibreELEC release 11.0.6 is `https://addons.libreelec.tv/11.0.0/`.
+    - name: 'test | add LibreELEC repository for LibreELEC hosts'
+      set_fact:
+        kodi_repositories: '{{
+          kodi_repositories + [("libreelec_cached=https://addons.libreelec.tv/" ~ ansible_distribution_major_version ~ ".0.0/Generic/x86_64/addons.xml.gz")]
+        }}'
+      when: 'ansible_distribution == "LibreELEC"'
   roles:
     - role: "{{ playbook_dir | dirname }}"
       vars:
@@ -59,16 +86,6 @@
           - plugin.video.jellyfin
           - script.module.amazoncaptcha
           - plugin.video.amazon-test
-        kodi_repositories:
-          - 'official_cached=https://mirrors.kodi.tv/addons/{{ (ansible_distribution == "Ubuntu") | ternary("matrix", "nexus") }}/addons.xml.gz'
-          - 'jellyfin_cached=https://repo.jellyfin.org/releases/client/kodi/addons.xml'
-          - 'sandmann79_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages/addons.xml'
-          - 'sandmann79_py3_cached=https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml'
-          # XXX we include this repository for all target machines, but it will
-          # only work for LibreELEC machines.  This should be okay, as the only
-          # addons we need from this repository should already be present on
-          # non-LibreELEC hosts (e.g. the `inputstream.adaptive` addon).
-          - 'libreelec_cached=https://addons.libreelec.tv/11.80.4/Generic/x86_64/addons.xml.gz'
         kodi_config:
           - file: 'userdata/guisettings.xml'
             key: 'settings/setting[@id="input.libinputkeyboardlayout"]'
