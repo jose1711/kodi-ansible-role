@@ -38,12 +38,14 @@ This project includes a Vagrant environment for testing the
 `jose1711.kodi_ansible_role` Ansible role on several Linux distributions.  As
 of this writing, those distributions are:
 
-1. Alpine Linux (3.19)
+1. Alpine Linux 3.19
 2. Arch Linux
-3. Debian (12 (bookworm))
-4. Ubuntu (22.04 LTS (Jammy Jellyfish))
-5. LibreELEC (11.0.6)
-6. OSMC (20240205)
+3. Debian 11 (bullseye)
+4. Debian 12 (bookworm)
+5. Ubuntu 22.04 LTS (Jammy Jellyfish)
+6. Ubuntu 23.04 LTS (Lunar Lobster)
+7. LibreELEC 11.0.6
+8. OSMC 20240205
 
 This Vagrant environment supports the
 [`libvirt` provider](https://vagrant-libvirt.github.io/vagrant-libvirt/)[^provider-support].

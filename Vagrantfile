@@ -25,7 +25,7 @@ Vagrant.configure(2) do |config|
     domain.graphics_ip = '::'
   end
 
-  config.vm.define :alpine do |alpine|
+  config.vm.define :alpine319 do |alpine|
     alpine.vm.box = 'generic/alpine319'
   end
 
@@ -33,12 +33,20 @@ Vagrant.configure(2) do |config|
     archlinux.vm.box = 'archlinux/archlinux'
   end
 
-  config.vm.define :debian do |debian|
-    debian.vm.box = 'generic/debian12'
+  config.vm.define :debian11 do |debian11|
+    debian11.vm.box = 'generic/debian11'
   end
 
-  config.vm.define :ubuntu do |ubuntu|
-    ubuntu.vm.box = 'generic/ubuntu2204'
+  config.vm.define :debian12 do |debian12|
+    debian12.vm.box = 'generic/debian12'
+  end
+
+  config.vm.define :ubuntu2204 do |ubuntu2204|
+    ubuntu2204.vm.box = 'generic/ubuntu2204'
+  end
+
+  config.vm.define :ubuntu2304 do |ubuntu2304|
+    ubuntu2304.vm.box = 'generic/ubuntu2304'
   end
 
   config.vm.define :libreelec do |libreelec|
