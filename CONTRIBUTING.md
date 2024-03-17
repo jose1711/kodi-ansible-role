@@ -38,12 +38,14 @@ This project includes a Vagrant environment for testing the
 `jose1711.kodi_ansible_role` Ansible role on several Linux distributions.  As
 of this writing, those distributions are:
 
-1. Alpine Linux (3.19)
+1. Alpine Linux 3.19
 2. Arch Linux
-3. Debian (12 (bookworm))
-4. Ubuntu (22.04 LTS (Jammy Jellyfish))
-5. LibreELEC (11.0.6)
-6. OSMC (20240205)
+3. Debian 11 (bullseye)
+4. Debian 12 (bookworm)
+5. Ubuntu 22.04 LTS (Jammy Jellyfish)
+6. Ubuntu 23.04 LTS (Lunar Lobster)
+7. LibreELEC 11.0.6
+8. OSMC 20240205
 
 This Vagrant environment supports the
 [`libvirt` provider](https://vagrant-libvirt.github.io/vagrant-libvirt/)[^provider-support].
@@ -117,6 +119,38 @@ platform.  This makes the OSMC guest run faster, but comes with some downsides:
 > There is a bug in Vagrant that may cause problems on the first boot of the
 > OSMC machine.  If the first `vagrant up` (or `vagrant up osmc`) hangs or
 > crashes, please try re-running the command.
+
+### Cleaning up deprecated or renamed Vagrant machine
+
+From time to time, the names of Vagrant machines defined in the Vagrantfile may
+change (for instance, the machine formerly known as `ubuntu` may be renamed to
+`ubuntu2204`), or machines may be removed.  If the Vagrantfile changes in a
+backward-incompatible way, you may need to run `vagrant global-status` to
+retrieve the unique IDs associated with machines that have been renamed in or
+removed from the Vagrantfile, then use those IDs to destroy the machines:
+
+```shell-session
+$ vagrant destroy -f ubuntu
+The machine with the name 'ubuntu' was not found configured for
+this Vagrant environment.
+
+$ vagrant global-status
+id       name   provider state   directory
+------------------------------------------------------------------------------
+a2cfdaf  ubuntu libvirt running /path/to/kodi-ansible-role
+
+The above shows information about all known Vagrant environments
+on this machine. This data is cached and may not be completely
+up-to-date (use "vagrant global-status --prune" to prune invalid
+entries). To interact with any of the machines, you can go to that
+directory and run Vagrant, or you can use the ID directly with
+Vagrant commands from any directory. For example:
+"vagrant destroy 1a2b3c4d"
+
+$ vagrant destroy -f a2cfdaf
+==> ubuntu: Removing domain...
+==> ubuntu: Deleting the machine folder
+```
 
 ## GitHub Actions suite
 
