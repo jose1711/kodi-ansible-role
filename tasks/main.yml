@@ -61,9 +61,9 @@
 
 - name: Install Kodi and related apps
   package:
-    name: "{{ (packages | default([])) + (kodi_extra_packages | default([])) }}"
+    name: "{{ packages_final }}"
     state: present
-  when: "(((packages | default([])) + (kodi_extra_packages | default([]))) | length) > 0"
+  when: "(packages_final | length) > 0"
   tags:
   - install
   - get_addons

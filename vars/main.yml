@@ -35,3 +35,5 @@ kodi_repositories_final: "{{ kodi_repositories | reject('equalto', omit) | list 
 kodi_repository_names: "{{ kodi_repositories_final | map('regex_search', '^[^=]*') | list }}"
 
 kodi_addon_names: "{{ kodi_addons | map('regex_search', '^[^=]*') | list }}"
+
+packages_final: "{{ ((packages | default([])) + (kodi_extra_packages | default([]))) | reject('equalto', omit) | list }}"

@@ -35,27 +35,6 @@
 
 - hosts: all
   become: True
-    # NOTE that `kodi-inputstream-adaptive` does not ship with the base Kodi
-    # package, so we have to install `kodi-addon-inputstream-adaptive` on Arch
-    # Linux, and `kodi-inputstream-adaptive` elsewhere.
-    - name: 'test | define extra packages (Arch Linux)'
-      set_fact:
-        kodi_extra_packages:
-          - kodi-addon-inputstream-adaptive
-      when: 'ansible_distribution == "Archlinux"'
-
-    # LibreELEC and OSMC do not need additional packages (and, in LibreELEC's
-    # case, cannot install additional packages anyway).
-    - name: 'test | define extra packages (other)'
-      set_fact:
-        kodi_extra_packages:
-          - kodi-inputstream-adaptive
-      when: 'ansible_distribution not in ["Archlinux", "LibreELEC", "OSMC"]'
-
-    - name: 'test | add xvfb to extra packages for Debian and Ubuntu hosts'
-      set_fact:
-        kodi_extra_packages: '{{ (kodi_extra_packages | default([])) + ["xvfb"] }}'
-      when: 'ansible_distribution in ["Debian", "Ubuntu"]'
   roles:
     - role: "{{ playbook_dir | dirname }}"
       vars:
@@ -67,6 +46,16 @@
           - name: custom-group-for-testing
             system: False
             gid: 12345
+        # NOTE that `kodi-inputstream-adaptive` does not ship with the base
+        # Kodi package, so we have to install `kodi-addon-inputstream-adaptive`
+        # on Arch Linux, and `kodi-inputstream-adaptive` elsewhere.
+        #
+        # LibreELEC and OSMC do not need additional packages (and, in
+        # LibreELEC's case, cannot install additional packages anyway).
+        kodi_extra_packages:
+          - '{{ (ansible_distribution == "Archlinux") | ternary("kodi-addon-inputstream-adaptive", omit) }}'
+          - '{{ (ansible_distribution in ["Archlinux", "LibreELEC", "OSMC"]) | ternary(omit, "kodi-inputstream-adaptive") }}'
+          - '{{ (ansible_distribution in ["Debian", "Ubuntu"]) | ternary("xvfb", omit) }}'
         kodi_language: 'en_US'
         kodi_locale_country: 'United States'
         kodi_locale_timezone_country: 'United States'
