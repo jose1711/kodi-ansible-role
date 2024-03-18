@@ -61,9 +61,9 @@
 
 - name: Install Kodi and related apps
   package:
-    name: "{{ (packages | default([])) + (kodi_extra_packages | default([])) }}"
+    name: "{{ packages_final }}"
     state: present
-  when: "(((packages | default([])) + (kodi_extra_packages | default([]))) | length) > 0"
+  when: "(packages_final | length) > 0"
   tags:
   - install
   - get_addons
@@ -316,7 +316,7 @@
   become_user: "{{ kodi_user }}"
   become: True
   environment:
-    REPOSITORIES: "{{ kodi_repositories | map('quote') | list | join(' ') }}"
+    REPOSITORIES: "{{ kodi_repositories_final | map('quote') | list | join(' ') }}"
     ENABLED_REPOSITORIES: "{{ kodi_enabled_repositories | map('quote') | list | join(' ') }}"
     KODI_USER: "{{ kodi_user }}"
     KODI_DATA_DIR: "{{ kodi_data_dir }}"
