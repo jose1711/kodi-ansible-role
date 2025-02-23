@@ -859,6 +859,8 @@ class Manager(FilesystemMixin, KodiConfigMixin):
                 18: "27",
                 19: "33",
                 20: "33",
+                21: "33",
+                22: "33",
             }
 
             if self.kodi_version.major not in database_version_map:
