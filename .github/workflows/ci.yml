@@ -34,6 +34,7 @@ jobs:
                echo 'tzdata tzdata/Areas select Europe' | debconf-set-selections \
             && echo 'tzdata tzdata/Zones/Europe select Bratislava' | debconf-set-selections \
             && apt -y update \
+            && apt -y upgrade \
             && apt -y install --no-install-recommends ansible sudo
           } || :
           { pacman --noconfirm -Sy archlinux-keyring && pacman --noconfirm -Su && pacman --noconfirm -S ansible sudo ; } || :
