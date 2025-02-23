@@ -51,6 +51,11 @@ Vagrant.configure(2) do |config|
     ubuntu2304.vm.box = 'generic/ubuntu2304'
   end
 
+  config.vm.define :ubuntu2404 do |ubuntu2404|
+    # No `generic/ubuntu2404` box available.
+    ubuntu2404.vm.box = 'bento/ubuntu-24.04'
+  end
+
   config.vm.define :libreelec do |libreelec|
     box = File.expand_path('tmp/libreelec/LibreELEC-Generic.x86_64-11.0.6.box', __dir__)
 
