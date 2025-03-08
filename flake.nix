@@ -6,7 +6,7 @@
     devshell.inputs.nixpkgs.follows = "nixpkgs";
     flake-compat.url = "github:edolstra/flake-compat";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -32,6 +32,13 @@
         system,
         ...
       }: {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+
+          # Vagrant now has an unfree license.
+          config.allowUnfree = true;
+        };
+
         # `nix run '.#' -- <devshell-command>`
         apps.default = config.devShells.default.flakeApp;
 

@@ -38,7 +38,7 @@
         '19': 'matrix',
         '20': 'nexus',
         '21': 'omega',
-      }[(kodi_version | regex_replace('\\..$', ''))] | default('nexus')
+      }[(kodi_version | regex_replace('\\..*$', ''))] | default('omega')
     }}"
   tags:
   - get_addons
